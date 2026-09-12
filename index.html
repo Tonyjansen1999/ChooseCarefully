@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChooseCarefully</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== MENU (Always visible) ===== -->
+  <div class="menu-container">
+    <button class="menu-btn" id="menu-btn">☰ Menu</button>
+    <div class="menu-dropdown" id="menu-dropdown">
+      <button class="menu-item" id="menu-rulebook">Rulebook</button>
+      <button class="menu-item" id="menu-terms">Terms & Conditions</button>
+      <button class="menu-item" id="menu-creator">Creator</button>
+      <button class="menu-item" id="menu-settings">Settings</button>
+      <button class="menu-item" id="menu-credits">Credits</button>
+    </div>
+    <button class="btn-home-menu" id="btn-home-menu">🏠 Home</button>
+  </div>
+
+  <!-- ===== INFO MODAL (Overlay) ===== -->
+  <div class="info-modal" id="info-modal">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-box">
+      <button class="modal-close" id="modal-close">✕</button>
+      <h2 class="modal-title" id="modal-title"></h2>
+      <div class="modal-content" id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN MENU ===== -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-content">
+      <h1 class="game-title">Choose<span>Carefully</span></h1>
+      <p class="menu-subtitle">A one-on-one card battle game</p>
+      <button id="btn-start" class="btn btn-primary">⚔ Start Game</button>
+      <button id="btn-wave-mode" class="btn btn-wave">🌊 Wave Mode</button>
+    </div>
+  </div>
+
+  <!-- ===== CARD SELECTION ===== -->
+  <div id="screen-selection" class="screen">
+    <h2 class="screen-title">Choose Your Team</h2>
+    <p class="screen-subtitle">Select <strong>3 cards</strong>. Your first pick leads the battle.</p>
+    <div id="selection-grid" class="card-grid"></div>
+    <div id="selection-info" class="selection-info">
+      <span id="pick-label">Picks: <strong>0 / 3</strong></span>
+    </div>
+  </div>
+
+  <!-- ===== CARD DETAIL HOVER PANEL ===== -->
+  <div id="card-detail-panel" class="card-detail-panel" aria-hidden="true"></div>
+
+  <!-- ===== PASSIVE PICKER OVERLAY ===== -->
+  <div id="screen-passive" class="screen overlay-screen">
+    <div class="overlay-box passive-picker-box">
+      <button id="passive-pick-back" class="passive-pick-back">← Back</button>
+      <h2 id="passive-pick-title">Choose a Passive</h2>
+      <p id="passive-pick-subtitle">Select one passive ability for this card.</p>
+      <div id="passive-pick-options" class="passive-pick-options"></div>
+    </div>
+  </div>
+
+  <!-- ===== TEAM REVEAL ===== -->
+  <div id="screen-reveal" class="screen">
+    <h2 class="screen-title">Teams Ready</h2>
+    <div class="reveal-layout">
+      <div class="reveal-side">
+        <h3>Your Team</h3>
+        <div id="player-team-reveal" class="team-reveal-row"></div>
+      </div>
+      <div class="reveal-side">
+        <h3>Enemy Team</h3>
+        <div id="ai-team-reveal" class="team-reveal-row"></div>
+      </div>
+    </div>
+    <button id="btn-battle" class="btn btn-danger">⚔ BATTLE</button>
+  </div>
+
+  <!-- ===== BATTLE SCREEN ===== -->
+  <div id="screen-battle" class="screen">
+    <!-- Player reserves (top) -->
+    <div class="battle-reserves-bar" id="player-reserves-bar">
+      <span class="reserves-label">Your Reserves</span>
+      <div id="player-reserves" class="reserves-row"></div>
+    </div>
+
+    <!-- Arena -->
+    <div class="arena">
+      <!-- Player fighter -->
+      <div class="fighter-slot" id="player-fighter-slot">
+        <div id="player-fighter" class="battle-card player-side"></div>
+      </div>
+
+      <!-- VS / log -->
+      <div class="arena-center">
+        <div id="battle-log" class="battle-log"></div>
+        <div id="turn-info" class="turn-info"></div>
+        <button id="btn-pause" class="btn btn-pause">⏸ Pause</button>
+        <button id="btn-log"   class="btn btn-pause btn-log-toggle">📋 Log</button>
+      </div>
+
+      <!-- AI fighter -->
+      <div class="fighter-slot" id="ai-fighter-slot">
+        <div id="ai-fighter" class="battle-card ai-side"></div>
+      </div>
+    </div>
+
+    <!-- AI reserves (bottom) -->
+    <div class="battle-reserves-bar" id="ai-reserves-bar">
+      <span class="reserves-label">Enemy Reserves</span>
+      <div id="ai-reserves" class="reserves-row"></div>
+    </div>
+  </div>
+
+  <!-- ===== CHOOSE NEXT CARD OVERLAY ===== -->
+  <div id="screen-choose" class="screen overlay-screen">
+    <div class="overlay-box">
+      <h2 id="choose-title">Choose Your Next Fighter</h2>
+      <p id="choose-subtitle">Your card was defeated. Select a reserve to continue.</p>
+      <div id="choose-grid" class="card-grid small"></div>
+    </div>
+  </div>
+
+  <!-- ===== END GAME SCREEN ===== -->
+  <div id="screen-end" class="screen">
+    <div class="end-content">
+      <h1 id="end-title" class="end-title"></h1>
+      <p id="end-subtitle" class="end-subtitle"></p>
+      <div id="end-log" class="end-log"></div>
+      <button id="btn-restart" class="btn btn-primary">Restart</button>
+    </div>
+  </div>
+
+  <!-- ===== WAVE MODE LOBBY ===== -->
+  <div id="screen-wave-lobby" class="screen">
+    <div class="wave-lobby-content">
+      <h2 id="wave-lobby-title">Wave 1 of 50</h2>
+      <p id="wave-lobby-subtitle">Choose your starting fighter</p>
+      <div id="wave-heal-banner" class="wave-heal-banner" style="display:none">
+        ✨ Set Complete — Full heal &amp; revive granted!
+      </div>
+      <div id="wave-lobby-team" class="wave-lobby-team"></div>
+      <button id="btn-wave-fight" class="btn btn-danger" disabled>⚔ Fight Wave</button>
+    </div>
+  </div>
+
+  <!-- ===== WAVE UPGRADE PICKER (overlay) ===== -->
+  <div id="screen-wave-upgrade" class="screen overlay-screen">
+    <div class="overlay-box wave-upgrade-box">
+      <h2 id="wave-upgrade-title">🎁 Set Complete!</h2>
+      <p id="wave-upgrade-subtitle">Choose a reward for your team:</p>
+      <div id="wave-upgrade-options" class="wave-upgrade-options"></div>
+    </div>
+  </div>
+
+  <!-- ===== WAVE VICTORY SCREEN ===== -->
+  <div id="screen-wave-victory" class="screen">
+    <div class="end-content">
+      <h1 class="end-title victory">🏆 Legendary!</h1>
+      <p class="end-subtitle">You conquered all 50 waves. A true champion!</p>
+      <button id="btn-wave-play-again" class="btn btn-primary">Play Again</button>
+    </div>
+  </div>
+
+  <!-- ===== WAVE LOOT OVERLAY (shown during battle when enemy drops loot) ===== -->
+  <div id="wave-loot-overlay" class="wave-loot-overlay" style="display:none">
+    <div class="wave-loot-box">
+      <div class="wave-loot-header">
+        <img id="wave-loot-icon" src="" alt="" class="wave-loot-icon-img" />
+        <div>
+          <h3 id="wave-loot-name" class="wave-loot-name"></h3>
+          <span id="wave-loot-rarity" class="wave-loot-rarity"></span>
+        </div>
+      </div>
+      <p id="wave-loot-desc" class="wave-loot-desc"></p>
+      <div id="wave-loot-picks" class="wave-loot-picks"></div>
+    </div>
+  </div>
+
+  <!-- ===== ITEM BAG TOOLTIP (global, positioned by JS) ===== -->
+  <div id="item-bag-tooltip" class="item-bag-tooltip" style="display:none">
+    <div class="ibt-title"></div>
+    <div id="ibt-slots" class="ibt-slots"></div>
+  </div>
+
+  <script src="script.js"></script>
+
+  <!-- Background music (no loop — switching is handled in JS) -->
+  <audio id="sound-menu"  src="Sounds/Menu.wav"  preload="auto"></audio>
+  <audio id="sound-menu2" src="Sounds/Menu2.wav" preload="auto"></audio>
+  <audio id="sound-game"  src="Sounds/Game.wav"  preload="auto"></audio>
+  <audio id="sound-game2" src="Sounds/Game2.wav" preload="auto"></audio>
+  <!-- Sound effects -->
+  <audio id="sound-button"    src="Sounds/Button.wav"    preload="auto"></audio>
+  <audio id="sound-hit"       src="Sounds/Hit.wav"       preload="auto"></audio>
+  <audio id="sound-arrow"     src="Sounds/arrow.wav"     preload="auto"></audio>
+  <audio id="sound-fireball"  src="Sounds/fireball.wav"  preload="auto"></audio>
+  <audio id="sound-sword"     src="Sounds/sword.wav"     preload="auto"></audio>
+  <audio id="sound-wand"      src="Sounds/wand.ogg"      preload="auto"></audio>
+  <audio id="sound-chain"     src="Sounds/Chain.wav"     preload="auto"></audio>
+  <audio id="sound-heal"      src="Sounds/Heal.wav"      preload="auto"></audio>
+  <audio id="sound-holy"      src="Sounds/Holy.wav"      preload="auto"></audio>
+  <audio id="sound-lightning" src="Sounds/Lightning.wav" preload="auto"></audio>
+</body>
+</html>

@@ -1,0 +1,1846 @@
+/* =========================================================
+   ChooseCarefully — Stylesheet
+   Dark fantasy / MOBA aesthetic
+   ========================================================= */
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0d0f1a;
+  --surface:    #161826;
+  --surface2:   #1e2235;
+  --border:     #2e3355;
+  --accent:     #5b8aff;
+  --accent2:    #ff5b6e;
+  --gold:       #ffd166;
+  --green:      #06d6a0;
+  --text:       #e8eaf6;
+  --muted:      #7b82a8;
+  --radius:     12px;
+  --card-w:     160px;
+  --card-h:     230px;
+  --transition: 0.25s ease;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg) url('Images/Background.png') center center / cover no-repeat fixed;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ── Screens ── */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Selection screen: scroll from top so a 2-row grid never clips */
+#screen-selection {
+  justify-content: flex-start;
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 14px 40px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+}
+.btn:hover  { transform: translateY(-2px); filter: brightness(1.15); }
+.btn:active { transform: translateY(0);    filter: brightness(0.95); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(91,138,255,.45);
+}
+.btn-danger {
+  background: var(--accent2);
+  color: #fff;
+  font-size: 1.3rem;
+  padding: 16px 60px;
+  box-shadow: 0 0 28px rgba(255,91,110,.45);
+}
+
+.btn-pause {
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  padding: 7px 18px;
+  letter-spacing: 0.06em;
+  box-shadow: none;
+}
+.btn-pause:hover { color: var(--text); border-color: var(--accent); }
+.btn-pause.is-paused {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(255,209,102,.4);
+}
+
+/* =========================================================
+   MAIN MENU
+   ========================================================= */
+.menu-content { text-align: center; }
+
+.game-title {
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  text-shadow: 0 0 40px rgba(91,138,255,.5);
+}
+.game-title span { color: var(--accent); }
+
+.menu-subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+  margin: 10px 0 40px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   SCREEN TITLES
+   ========================================================= */
+.screen-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.screen-subtitle {
+  color: var(--muted);
+  margin-bottom: 28px;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   CARD GRID (selection)
+   ========================================================= */
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  max-width: 1100px;
+}
+.card-grid.small .card { width: 130px; height: 188px; }
+.card-grid.small .card-info { padding: 6px 8px; }
+.card-grid.small .card-info h3 { font-size: 0.78rem; }
+.card-grid.small .card-info p  { font-size: 0.68rem; }
+
+/* ── Card ── */
+.card {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+  position: relative;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  user-select: none;
+}
+.card:hover {
+  transform: translateY(-6px) scale(1.03);
+  border-color: var(--accent);
+  box-shadow: 0 8px 30px rgba(91,138,255,.35);
+}
+.card.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px rgba(255,209,102,.5);
+}
+.card.disabled { cursor: not-allowed; opacity: 0.6; pointer-events: none; }
+
+/* Card image area */
+.card-image {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.card-image img:not(.armor-icon):not(.loot-badge-icon) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.card:hover .card-image img:not(.armor-icon):not(.loot-badge-icon) { transform: scale(1.06); }
+
+/* Ultimate bar */
+.ultimate-bar-wrap {
+  height: 5px;
+  background: rgba(0,0,0,.6);
+  border-radius: 3px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+.ultimate-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00d9ff 0%, #00a8cc 100%);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(0,217,255,.6);
+}
+
+/* Pick badge */
+.pick-badge {
+  position: absolute;
+  top: 6px; left: 6px;
+  background: var(--gold);
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
+
+/* Card info panel */
+.card-info {
+  background: rgba(13,15,26,.88);
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.card-info h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+  color: var(--text);
+}
+.card-info .stats {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.card-info .stats .hp  { color: var(--green); }
+.card-info .stats .dmg { color: var(--accent2); }
+.hp-shield {
+  color: var(--accent);
+  font-size: 0.7em;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.card-info .passive {
+  font-size: 0.67rem;
+  color: var(--gold);
+  line-height: 1.3;
+  font-style: italic;
+}
+
+/* ── Selection info bar ── */
+.selection-info {
+  margin-top: 18px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.selection-info strong { color: var(--text); }
+
+/* =========================================================
+   TEAM REVEAL
+   ========================================================= */
+.reveal-layout {
+  display: flex;
+  gap: 60px;
+  margin: 10px 0 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.reveal-side { text-align: center; }
+.reveal-side h3 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.team-reveal-row {
+  display: flex;
+  gap: 14px;
+}
+.team-reveal-row .card { cursor: default; }
+.team-reveal-row .card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 6px 24px rgba(91,138,255,.3);
+}
+
+/* =========================================================
+   BATTLE SCREEN
+   ========================================================= */
+#screen-battle {
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 0;
+}
+
+/* Reserves bar */
+.battle-reserves-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.reserves-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.reserves-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.reserves-row .card {
+  width: 90px;
+  height: 130px;
+  cursor: default;
+}
+.reserves-row .card:hover { transform: none; box-shadow: none; }
+.reserves-row .card-info { padding: 5px 6px; }
+.reserves-row .card-info h3 { font-size: 0.7rem; }
+.reserves-row .card-info .stats { font-size: 0.62rem; gap: 4px; }
+.reserves-row .card-info .passive { display: none; }
+.reserves-row .card.dead {
+  opacity: 0.45;
+  filter: grayscale(1) brightness(0.7);
+  pointer-events: none;
+}
+
+/* Arena */
+.arena {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  min-height: 0;
+}
+
+.fighter-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Battle card (large fighter) */
+.battle-card {
+  width: 170px;
+  height: 250px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 6px 30px rgba(0,0,0,.6);
+  transition: transform 0.15s ease;
+}
+.battle-card.player-side { border-color: var(--accent); box-shadow: 0 0 20px rgba(91,138,255,.3); }
+.battle-card.ai-side     { border-color: var(--accent2); box-shadow: 0 0 20px rgba(255,91,110,.3); }
+
+.battle-card .card-image { flex: 1; }
+.battle-card .card-info  { padding: 8px 10px; }
+.battle-card .card-info h3 { font-size: 0.9rem; }
+
+/* HP bar */
+.hp-bar-wrap {
+  margin-top: 5px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hp-bar {
+  height: 100%;
+  background: var(--green);
+  border-radius: 4px;
+  transition: width 0.5s ease, background 0.5s ease;
+}
+
+/* Attack animation */
+@keyframes attack-right {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(28px); }
+  100% { transform: translateX(0); }
+}
+@keyframes attack-left {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(-28px); }
+  100% { transform: translateX(0); }
+}
+@keyframes flash-hit {
+  0%,100% { filter: brightness(1); }
+  50%      { filter: brightness(2.5) saturate(0); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+@keyframes float-dmg {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-50px); }
+}
+@keyframes death-fade {
+  to { opacity: 0; transform: scale(0.8); }
+}
+
+.do-attack-right  { animation: attack-right 0.35s ease; }
+.do-attack-left   { animation: attack-left  0.35s ease; }
+.do-flash         { animation: flash-hit    0.35s ease; }
+.do-shake         { animation: shake        0.4s  ease; }
+.do-death         { animation: death-fade   0.6s forwards; }
+
+/* Floating damage number */
+.float-dmg {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--accent2);
+  text-shadow: 0 2px 8px rgba(0,0,0,.8);
+  pointer-events: none;
+  z-index: 50;
+  animation: float-dmg 0.9s ease forwards;
+}
+
+.float-miss {
+  color: var(--muted);
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+/* ── Arena center (log + turn info) ── */
+.arena-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  max-width: 200px;
+  text-align: center;
+}
+
+.battle-log {
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  scroll-behavior: smooth;
+}
+.battle-log .log-player { color: var(--accent); }
+.battle-log .log-ai     { color: var(--accent2); }
+.battle-log .log-event  { color: var(--gold); }
+
+.turn-info {
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+/* =========================================================
+   CHOOSE NEXT CARD OVERLAY
+   ========================================================= */
+.overlay-screen {
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+}
+.overlay-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 36px;
+  text-align: center;
+  box-shadow: 0 12px 50px rgba(0,0,0,.8);
+  max-width: 600px;
+  width: 100%;
+}
+.overlay-box h2 { font-size: 1.5rem; margin-bottom: 8px; }
+.overlay-box p  { color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
+
+/* =========================================================
+   END GAME
+   ========================================================= */
+#screen-end { background: var(--bg); }
+.end-content { text-align: center; }
+
+.end-title {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  animation: end-pop 0.6s cubic-bezier(.36,2,.3,1) both;
+}
+.end-title.victory { color: var(--gold); text-shadow: 0 0 60px rgba(255,209,102,.6); }
+.end-title.defeat  { color: var(--accent2); text-shadow: 0 0 60px rgba(255,91,110,.6); }
+
+.end-subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+  margin: 12px 0 18px;
+}
+
+.end-log {
+  width: 340px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: left;
+  margin: 0 auto 28px;
+}
+
+@keyframes end-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Fade out for restart */
+.fade-out {
+  animation: fadeOut 0.4s ease forwards;
+}
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+/* ── Projectile animations ── */
+.projectile {
+  position: fixed;
+  z-index: 9999;
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: left 0.28s ease-out, top 0.28s ease-out;
+}
+.projectile.impact {
+  transition: none;
+  animation: impact-pop 0.55s ease forwards;
+}
+.projectile.impact.flip {
+  animation: impact-pop-flip 0.55s ease forwards;
+}
+@keyframes impact-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+@keyframes impact-pop-flip {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scaleX(-1) scale(0.3); }
+  35%  { opacity: 1; transform: translate(-50%, -50%) scaleX(-1) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scaleX(-1) scale(0.9); }
+}
+
+/* ── Berserk glow ── */
+.berserk {
+  animation: berserk-pulse 1s ease-in-out infinite;
+}
+@keyframes berserk-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 40, 40, 0.8), 0 0 24px rgba(255, 40, 40, 0.4); }
+  50%       { box-shadow: 0 0 22px rgba(255, 40, 40, 1),   0 0 44px rgba(255, 40, 40, 0.7); }
+}
+
+/* ── Armor badge ── */
+.armor-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: rgba(0,0,0,0.55);
+  border-radius: 3px;
+  padding: 1px 3px;
+  pointer-events: none;
+  z-index: 2;
+}
+.armor-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.armor-val {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #e8d97a;
+  line-height: 1;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* =========================================================
+   MENU & MODAL
+   ========================================================= */
+.menu-container {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  user-select: none;
+}
+
+.menu-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.05em;
+}
+.menu-btn:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+.menu-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: max-height 0.25s ease, opacity 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6);
+}
+.menu-dropdown.active {
+  max-height: 260px;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.menu-item {
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  border-bottom: 1px solid var(--border);
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+/* Home button — shown below the ☰ toggle on non-menu screens */
+.btn-home-menu {
+  display: none;           /* JS overrides to block when not on main menu */
+  margin-top: 6px;
+  width: 100%;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.btn-home-menu:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
+}
+
+/* Info Modal */
+.info-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 300;
+  padding: 20px;
+}
+.info-modal.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-box {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 12px 50px rgba(0,0,0,.8);
+  z-index: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--surface2);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  z-index: 10;
+}
+.modal-close:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: var(--text);
+  margin-top: 0;
+}
+
+.modal-content {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.modal-content h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.modal-content h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.modal-content p {
+  margin: 8px 0;
+  color: var(--muted);
+}
+
+.modal-content ul {
+  margin: 8px 0 8px 20px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.modal-content li {
+  margin: 4px 0;
+}
+
+.modal-content strong {
+  color: var(--text);
+}
+
+.modal-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* Volume slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--value, 50%), var(--border) var(--value, 50%), var(--border) 100%);
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(91,138,255,.6), inset 0 0 4px rgba(0,0,0,.3);
+  border: 2px solid var(--text);
+  margin-top: -5px;
+}
+
+input[type="range"]::-moz-track {
+  background: var(--border);
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+}
+
+input[type="range"]::-moz-range-progress {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--text);
+  box-shadow: 0 0 10px rgba(91,138,255,.6), inset 0 0 4px rgba(0,0,0,.3);
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
+
+/* Tablets and medium screens */
+@media (max-width: 1024px) {
+  :root {
+    --card-w: 140px;
+    --card-h: 200px;
+  }
+  .screen-title { font-size: 1.5rem; }
+  .screen-subtitle { font-size: 0.9rem; }
+}
+
+/* Small tablets and large phones */
+@media (max-width: 768px) {
+  :root {
+    --card-w: 120px;
+    --card-h: 175px;
+  }
+  .screen { padding: 12px; }
+  .screen-title { font-size: 1.3rem; margin-bottom: 4px; }
+  .screen-subtitle { font-size: 0.85rem; margin-bottom: 16px; }
+  .card-grid { gap: 12px; }
+  .battle-card { width: 140px; height: 210px; }
+  .reserves-row { gap: 8px; }
+  .reserves-row .card { width: 75px; height: 110px; }
+}
+
+/* Phones and small devices */
+@media (max-width: 480px) {
+  :root {
+    --card-w: 100px;
+    --card-h: 145px;
+  }
+  .screen { padding: 8px; }
+  .screen-title { font-size: 1.1rem; margin-bottom: 2px; }
+  .screen-subtitle { font-size: 0.75rem; margin-bottom: 12px; }
+  .card-grid { gap: 8px; }
+  .card-info { padding: 5px 6px; }
+  .card-info h3 { font-size: 0.7rem; margin-bottom: 2px; }
+  .card-info .stats { font-size: 0.6rem; gap: 4px; }
+  .card-info .passive { font-size: 0.6rem; }
+
+  .battle-card { width: 110px; height: 160px; }
+  .battle-card .card-info h3 { font-size: 0.8rem; }
+  .reserves-row { gap: 6px; }
+  .reserves-row .card { width: 65px; height: 95px; }
+  .reserves-row .card-info { padding: 4px 5px; }
+  .reserves-row .card-info h3 { font-size: 0.65rem; }
+  .reserves-row .card-info .stats { font-size: 0.55rem; }
+
+  .arena { gap: 10px; }
+  .battle-log { max-height: 120px; font-size: 0.7rem; }
+  .btn { padding: 10px 24px; font-size: 0.9rem; }
+  .btn-danger { font-size: 1rem; padding: 12px 40px; }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  :root {
+    --card-w: 85px;
+    --card-h: 125px;
+  }
+  .screen-title { font-size: 1rem; }
+  .screen-subtitle { font-size: 0.7rem; }
+  .card-info h3 { font-size: 0.65rem; }
+  .card-info .stats { font-size: 0.55rem; }
+  .battle-card { width: 95px; height: 140px; }
+  .reserves-row .card { width: 55px; height: 80px; }
+}
+
+/* ── Reveal screen: scroll from top so cards never clip ── */
+#screen-reveal {
+  justify-content: flex-start;
+  padding-top: 36px;
+  padding-bottom: 36px;
+}
+
+/* ── Log toggle button: hidden on desktop ── */
+.btn-log-toggle { display: none; }
+
+/* ─────────────────────────────────────────────────────────
+   MOBILE BATTLE LAYOUT  (≤ 768 px)
+   Bench cards sit BESIDE their active fighter.
+   Layout: [player-bench][player-active][ai-active][ai-bench]
+   ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* #screen-battle becomes a 4-column grid */
+  #screen-battle {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "player-res  player-slot  ai-slot  ai-res"
+      ".           controls     controls .      ";
+    column-gap: 8px;
+    row-gap: 10px;
+    padding: 10px 8px;
+    align-items: center;
+    justify-content: center;
+    /* Undo the old flex overrides */
+    flex-direction: unset;
+    justify-content: unset;
+  }
+
+  /* Arena becomes transparent — its children join #screen-battle's grid directly */
+  .arena { display: contents; }
+
+  /* Place each element in its named area */
+  #player-reserves-bar { grid-area: player-res; width: auto; align-self: center; }
+  #player-fighter-slot { grid-area: player-slot; }
+  #ai-fighter-slot     { grid-area: ai-slot; }
+  #ai-reserves-bar     { grid-area: ai-res;    width: auto; align-self: center; }
+  .arena-center {
+    grid-area: controls;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Reserves: stack cards vertically, hide label to save space */
+  .battle-reserves-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+  }
+  .reserves-label { display: none; }
+  .reserves-row   { flex-direction: column; gap: 4px; }
+
+  /* Log: hidden by default, shown as fixed bottom sheet */
+  .battle-log { display: none; }
+  .battle-log.log-visible {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 45vh;
+    z-index: 50;
+    border-radius: 12px 12px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    background: rgba(22, 24, 38, 0.97);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Log toggle button visible */
+  .btn-log-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .btn-log-toggle.log-open {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* Compact pause button */
+  .btn-pause { padding: 6px 12px; font-size: 0.8rem; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   MOBILE UX FIXES  (≤ 480 px)
+   Smaller everything; bigger sliders; reveal scroll.
+   ───────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+
+  /* — Reveal screen: tighter gap — */
+  .reveal-layout { gap: 20px; }
+  .reveal-side h3 { margin-bottom: 8px; }
+
+  /* — Sliders: bigger track + thumb for touchscreen — */
+  input[type="range"]::-webkit-slider-track { height: 14px; }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -7px;
+  }
+  input[type="range"]::-moz-track       { height: 14px; }
+  input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; }
+
+  /* — Smaller battle cards so everything fits — */
+  .battle-card { width: 85px; height: 125px; }
+  .battle-card .card-info { padding: 4px 5px; }
+  .battle-card .card-info h3 { font-size: 0.68rem; }
+  .battle-card .card-info .stats { font-size: 0.52rem; }
+  .battle-card .card-info .passive { font-size: 0.52rem; }
+
+  /* — Tiny reserve cards that fit beside the fighters — */
+  .reserves-row .card { width: 44px; height: 64px; }
+  .reserves-row .card-info { padding: 3px 4px; }
+  .reserves-row .card-info h3 { font-size: 0.52rem; }
+  .reserves-row .card-info .stats { display: none; }
+
+  /* — Compact buttons and turn info — */
+  .btn-pause { padding: 5px 10px; font-size: 0.75rem; }
+  .btn-log-toggle { padding: 5px 10px; font-size: 0.75rem; }
+  .turn-info { font-size: 0.65rem; }
+
+  /* — Smaller menu button — */
+  .menu-btn { padding: 5px 9px; font-size: 0.72rem; }
+}
+
+/* =========================================================
+   CARD DETAIL HOVER PANEL
+   ========================================================= */
+.card-detail-panel {
+  position: fixed;
+  z-index: 90;           /* below overlays (100+) and modals (300) */
+  width: 252px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: 0 8px 36px rgba(0,0,0,.85);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.card-detail-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cdp-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.cdp-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.cdp-hp  { color: var(--green); }
+.cdp-dmg { color: var(--accent2); }
+
+/* Damage type labels — hover panel */
+.cdp-dmg-type {
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin: 2px 0 6px;
+  letter-spacing: 0.02em;
+}
+.cdp-dmg.dmg-physical, .cdp-dmg-type.dmg-physical { color: #e8b44a; }
+.cdp-dmg.dmg-magical,  .cdp-dmg-type.dmg-magical  { color: #9b7fe8; }
+.cdp-dmg.dmg-mixed,    .cdp-dmg-type.dmg-mixed    { color: #c07cd0; }
+
+/* Damage type tags — battle log */
+.log-phys  { color: #e8b44a; font-size: 0.78em; font-weight: 600; }
+.log-mag   { color: #9b7fe8; font-size: 0.78em; font-weight: 600; }
+.log-mixed { color: #c07cd0; font-size: 0.78em; font-weight: 600; }
+
+/* ── Reborn ally (darkened) ── */
+.card-image.reborn img:not(.armor-icon) {
+  filter: brightness(0.50) grayscale(0.2);
+}
+
+/* ── Large projectile (Lava Blast) ── */
+.projectile.large {
+  width: 256px !important;
+  height: 256px !important;
+}
+
+.cdp-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+.cdp-section-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cdp-ult-charge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 0.6rem;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.cdp-passive {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.cdp-option-tag {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.cdp-opt-a {
+  background: rgba(91,138,255,.2);
+  color: var(--accent);
+  border: 1px solid rgba(91,138,255,.45);
+}
+.cdp-opt-b {
+  background: rgba(255,91,110,.2);
+  color: var(--accent2);
+  border: 1px solid rgba(255,91,110,.45);
+}
+
+.cdp-passive-body strong {
+  font-size: 0.8rem;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 2px;
+}
+.cdp-passive-body p {
+  font-size: 0.73rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.cdp-ult-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* =========================================================
+   PASSIVE PICKER OVERLAY
+   ========================================================= */
+.passive-picker-box {
+  max-width: 480px;
+}
+
+.passive-pick-back {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 5px 12px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: color var(--transition), border-color var(--transition);
+}
+.passive-pick-back:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.passive-pick-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.passive-pick-btn {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  color: var(--text);
+  width: 100%;
+}
+.passive-pick-btn:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 16px rgba(91,138,255,.3);
+}
+.passive-pick-btn .passive-btn-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 4px;
+}
+.passive-pick-btn .passive-btn-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 2px;
+  display: block;
+}
+.passive-pick-btn .passive-btn-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Chosen passive tag shown on selected cards in the selection grid */
+.chosen-passive-tag {
+  margin-top: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(91,138,255,.15);
+  border: 1px solid rgba(91,138,255,.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  display: inline-block;
+  letter-spacing: 0.04em;
+}
+
+/* Passive name badge on card (shown in reveal / battle) */
+.passive-label {
+  font-size: 0.67rem;
+  color: var(--gold);
+  line-height: 1.3;
+  font-style: italic;
+}
+.passive-label strong {
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* =========================================================
+   WAVE MODE
+   ========================================================= */
+.btn-wave {
+  background: linear-gradient(135deg, #1a6bff 0%, #7b2fff 100%);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(91,138,255,.35);
+  margin-top: 14px;
+}
+.btn-wave:hover { filter: brightness(1.2); }
+
+/* Lobby screen */
+.wave-lobby-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 620px;
+}
+.wave-lobby-content h2 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 900;
+  color: var(--text);
+}
+.wave-lobby-content > p {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.wave-heal-banner {
+  background: rgba(6,214,160,.12);
+  border: 1px solid rgba(6,214,160,.4);
+  border-radius: var(--radius);
+  color: var(--green);
+  font-weight: 700;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+}
+
+.wave-lobby-team {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.wave-lobby-team .card {
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.wave-lobby-team .card:hover:not(.dead) {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 0 18px rgba(91,138,255,.4);
+}
+.wave-lobby-team .card.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 22px rgba(255,209,102,.55);
+}
+.wave-lobby-team .card.dead {
+  opacity: 0.38;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Upgrade overlay */
+.wave-upgrade-box {
+  width: min(560px, 95vw);
+  text-align: center;
+}
+.wave-upgrade-box h2 { margin-bottom: 6px; }
+#wave-upgrade-subtitle {
+  color: var(--muted);
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+}
+.wave-upgrade-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wave-upgrade-btn {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 14px 18px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  transition: border-color .2s, background .2s, transform .15s;
+  width: 100%;
+}
+.wave-upgrade-btn:hover {
+  background: var(--surface);
+  transform: translateY(-2px);
+}
+.wave-upgrade-btn strong { display: block; margin-bottom: 3px; }
+.wave-upgrade-btn span  { color: var(--muted); font-size: 0.84rem; }
+
+.wave-upgrade-btn.rarity-common   { border-color: var(--border); }
+.wave-upgrade-btn.rarity-rare     {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(91,138,255,.3);
+}
+.wave-upgrade-btn.rarity-veryrare {
+  border-color: var(--gold);
+  background: rgba(255,209,102,.07);
+  box-shadow: 0 0 18px rgba(255,209,102,.42);
+}
+.wave-upgrade-btn.rarity-rare     strong { color: var(--accent); }
+.wave-upgrade-btn.rarity-veryrare strong { color: var(--gold); }
+
+/* Wave badge shown in the turn-info area during battle */
+.wave-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(91,138,255,.12);
+  border: 1px solid rgba(91,138,255,.3);
+  border-radius: 20px;
+  padding: 2px 10px;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+  display: inline-block;
+}
+
+/* =========================================================
+   WAVE ITEM SYSTEM
+   ========================================================= */
+
+/* ── Fighter slots need position:relative for absolute children ── */
+#player-fighter, #ai-fighter { position: relative; }
+.card { position: relative; }
+
+/* ── Bag icon on player cards ── */
+.card-bag-icon {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 10;
+  border-radius: 3px;
+}
+.card-bag-icon:hover { opacity: 1; transform: scale(1.15); }
+
+/* ── Enemy loot badge — sits inside .card-image, bottom-right corner ── */
+.card-image { position: relative; }   /* ensure .card-image is a positioning ctx */
+.enemy-loot-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0,0,0,.82);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.62rem;
+  color: var(--gold);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 4;
+}
+.enemy-loot-badge img {
+  width: 8px;
+  height: 8px;
+  object-fit: contain;
+}
+
+/* ── Item bag tooltip ── */
+.item-bag-tooltip {
+  position: fixed;
+  z-index: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 220px;
+  max-width: 280px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 6px 24px rgba(0,0,0,.75);
+}
+.ibt-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.ibt-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.ibt-slot {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 54px;
+  position: relative;
+}
+.ibt-slot.empty { opacity: 0.3; }
+.ibt-slot.rarity-common    { border-color: #ccc; }
+.ibt-slot.rarity-rare      { border-color: #4a9eff; box-shadow: 0 0 6px rgba(74,158,255,.3); }
+.ibt-slot.rarity-legendary { border-color: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,.4); }
+.ibt-slot img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.ibt-slot-name {
+  font-size: 0.54rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
+}
+.ibt-slot-count {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+.ibt-slot-use {
+  font-size: 0.58rem;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background 0.15s;
+}
+.ibt-slot-use:hover { background: var(--accent2); }
+
+/* Item description tooltip — shown on hover via CSS ::after */
+.item-bag-tooltip { overflow: visible; }  /* ensure ::after isn't clipped */
+.ibt-slot[data-tooltip] { cursor: help; }
+.ibt-slot[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: normal;
+  text-align: left;
+  z-index: 700;
+  box-shadow: 0 4px 18px rgba(0,0,0,.8);
+  pointer-events: none;
+}
+/* Small arrow pointing down toward the slot */
+.ibt-slot[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--accent);
+  z-index: 700;
+  pointer-events: none;
+}
+
+/* ── Wave loot overlay ── */
+.wave-loot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+.wave-loot-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 370px;
+  width: 92%;
+  box-shadow: 0 8px 32px rgba(0,0,0,.8);
+  text-align: center;
+}
+.wave-loot-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.wave-loot-icon-img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+.wave-loot-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.wave-loot-rarity {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.wave-loot-rarity.rarity-common    { color: #ccc; }
+.wave-loot-rarity.rarity-rare      { color: #4a9eff; }
+.wave-loot-rarity.rarity-legendary { color: #ffd700; }
+.wave-loot-desc {
+  color: var(--muted);
+  font-size: 0.83rem;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.wave-loot-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.wave-loot-section-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 4px 0 2px;
+}
+.wave-loot-use-divider {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 6px 0 2px;
+  opacity: 0.7;
+}
+.wave-loot-pick-btn {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-align: left;
+  transition: border-color 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.wave-loot-pick-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.wave-loot-pick-btn.unavailable {
+  opacity: 0.4;
+  cursor: default;
+}
+.wave-loot-pick-btn.unavailable:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+/* "Use Now" buttons get a tinted border to distinguish from "Give" buttons */
+.wave-loot-use-now-btn:not(.unavailable) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.wave-loot-use-now-btn:not(.unavailable):hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+}
+
+/* ── Reserve card hover tooltip ── */
+#reserve-card-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 700;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--surface2, #1e2235);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.8);
+  pointer-events: none;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+.rct-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.rct-stats {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-bottom: 5px;
+}
+.rct-passive {
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.rct-items-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.rct-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.rct-item {
+  font-size: 0.74rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.rct-loot {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.rct-loot-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  margin-bottom: 3px;
+}
+.rct-loot-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ── Angel golden glow on revived fighter ── */
+#player-fighter.angel-revived .card-image img {
+  box-shadow: 0 0 20px 6px rgba(255,215,0,.7);
+  animation: angel-pulse 1.8s ease-in-out infinite alternate;
+}
+@keyframes angel-pulse {
+  from { box-shadow: 0 0 12px 3px rgba(255,215,0,.55); }
+  to   { box-shadow: 0 0 30px 10px rgba(255,215,0,.9); }
+}
+
+/* ── Death's Door red glow ── */
+.deaths-door {
+  animation: deaths-door-pulse 0.8s ease-in-out infinite;
+}
+@keyframes deaths-door-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(220, 30, 30, 0.9), 0 0 28px rgba(220, 30, 30, 0.5); }
+  50%       { box-shadow: 0 0 26px rgba(255, 50, 50, 1),   0 0 52px rgba(255, 50, 50, 0.8); }
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
