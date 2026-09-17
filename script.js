@@ -4274,7 +4274,7 @@ function showModal(section) {
       <hr>
 
       <h4>Building Your Team</h4>
-      <p>Choose <strong>3 of the 9 available classes</strong>. Your first pick leads the battle.</p>
+      <p>Choose <strong>3 of the 12 available classes</strong>. Your first pick leads the battle.</p>
       <p>When you click a class, you are shown <strong>2 passive options</strong>. Pick one — your choice is locked for the entire match.</p>
       <p>The AI also picks 3 cards randomly and <strong>randomly chooses</strong> one of the two passives per card (50/50). Both teams and their chosen passives are revealed before battle starts.</p>
 
@@ -4302,8 +4302,8 @@ function showModal(section) {
       <p>Armor reduces <em>physical</em> damage only. It has no effect against magical attacks.</p>
 
       <h4>Damage Types</h4>
-      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Assassin (base attack), Marksman (base attack + Double Shot), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite).</p>
-      <p><strong>Magical damage</strong> — bypasses armor entirely. Dealt by: Cleric (all attacks), Mage (all attacks), Druid pre-transform (first attack only).</p>
+      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Rider, Assassin (base attack), Marksman (base attack + Double Shot), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite).</p>
+      <p><strong>Magical damage</strong> — bypasses armor entirely. Dealt by: Cleric (all attacks), Mage (all attacks), Necromancer (all attacks), Shaman (all attacks), Druid pre-transform (first attack only).</p>
       <p><strong>Mixed damage</strong> — some attacks from these classes split between physical and magical:</p>
       <ul>
         <li><strong>Assassin:</strong> base attack is physical; First Strike +30 bonus and ultimate +20 bonus are magical.</li>
@@ -4379,7 +4379,7 @@ function showModal(section) {
 
       <h4>Druid — 70 HP • 30 Damage (base form) • Leather Armor (+10) • Mixed Damage</h4>
       <p>The Druid starts fragile but transforms after its very first attack into a powerful new form based on the chosen passive. The transformation is permanent and the Druid keeps its current HP (adjusted by the stat bonus) for the rest of the match. The Druid's pre-transform first attack is magical (bypasses armor); all attacks after transformation deal physical damage.</p>
-      <p><strong>Option A — Bear Form:</strong> After the first attack, the Druid transforms into a Bear: maximum HP becomes 150, attack damage becomes 50, and HP is immediately restored to full (150). On transformation the Bear also gains <strong>+15 armor</strong>. The Bear is a durable tank-style fighter. <em>Wave Mode only:</em> the first time the Bear's HP drops below 33% of maximum in a wave, it instantly heals 30% of its maximum HP — this surge can happen only once per wave.</p>
+      <p><strong>Option A — Bear Form:</strong> After the first attack, the Druid transforms into a Bear: maximum HP becomes 150, attack damage becomes 50, and HP is immediately restored to full (150). On transformation the Bear also gains <strong>+15 armor</strong>. The Bear is a durable tank-style fighter. <em>Rogue Mode only:</em> the first time the Bear's HP drops below 33% of maximum in a wave, it instantly heals 30% of its maximum HP — this surge can happen only once per wave.</p>
       <p><strong>Option B — Wolf Form:</strong> After the first attack, the Druid transforms into a Wolf: maximum HP increases by +50 (to 120), HP also increases by +50, and attack damage becomes 60. The Wolf also attacks twice every turn — the first attack deals full normal damage, while the second hit (Wolf Bite) always deals exactly 25 fixed physical damage (reduced by the defender's armor).</p>
       <p><em>Ultimate (once — first attack):</em> Triggers the transformation. After transforming, the Druid no longer has an ultimate bar.</p>
 
@@ -4409,7 +4409,7 @@ function showModal(section) {
 
       <hr>
 
-      <h3>🌊 Wave Mode</h3>
+      <h3>🗡️ Rogue Mode</h3>
       <p>A 50-wave survival challenge. Pick 3 fighters, then face increasingly powerful enemy teams. HP and stats carry over between waves — choose wisely.</p>
 
       <h4>Structure</h4>
