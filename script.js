@@ -452,7 +452,7 @@ function buildDartPeon() {
     armorType: 'leather', armorValue: 10,
     passiveKey: 'dartpeon', passiveName: 'Poison Dart',
     passive: 'Poison Dart: Attacks apply Poison: 10 damage per turn + healing reduction.',
-    passives: [{ key: 'dartpeon', name: 'Poison Dart', description: 'Each hit poisons the target: 10 magical DOT per turn + 50% healing reduction. Clears when benched or at wave end.' }],
+    passives: [{ key: 'dartpeon', name: 'Poison Dart', description: 'Each hit poisons the target: 10 magical DOT per turn + 50% healing reduction. Persists while benched; only clears on death or at the next 10-wave section.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
   };
@@ -523,7 +523,7 @@ const WAVE_UPGRADES = [
 
 // ── Wave Item Pool ────────────────────────────────────────
 const WAVE_ITEMS = {
-  potion:      { id: 'potion',      name: 'Health Potion', image: 'Images/Potion.png',      rarity: 'common',    weight: 35, consumable: true,  unique: true,  desc: 'Use in the lobby to restore 70 HP to this card.' },
+  potion:      { id: 'potion',      name: 'Health Potion', image: 'Images/Potion.png',      rarity: 'common',    weight: 35, consumable: true,  unique: false, maxStack: 3, desc: 'Use in the lobby to restore 70 HP to this card. Stacks up to 3.' },
   revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 14, consumable: true,  unique: true,  desc: 'Use in the lobby: revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
   power:       { id: 'power',       name: 'Power',         image: 'Images/Power.png',       rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 base damage (stacks). Effect applied immediately on pickup.' },
   spikyvest:   { id: 'spikyvest',   name: 'Spiky Vest',    image: 'Images/SpikyVest.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 armor and +10 retaliation damage per stack. Attackers take retaliation damage when they hit you (physical only).' },
@@ -543,11 +543,29 @@ function rollLootItem() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// How many copies of a given item id a fighter is currently carrying.
+function itemCountOnFighter(fighter, itemId) {
+  return (fighter.items || []).filter(i => i.id === itemId).length;
+}
+
+// Reusable stack-limit check: a `unique` item allows exactly 1; an item with a
+// `maxStack` (e.g. Health Potion's 3) allows that many copies; anything else is
+// unlimited. Centralizing this here means potion stacking (and any future
+// stackable-with-a-cap item) doesn't need its own hardcoded check wherever
+// items are given/equipped.
+function isItemAtCap(fighter, item) {
+  const count = itemCountOnFighter(fighter, item.id);
+  if (item.unique)   return count > 0;
+  if (item.maxStack) return count >= item.maxStack;
+  return false;
+}
+
 // Equip an item on a fighter: apply immediate effects and add to bag display.
 function equipItem(fighter, item) {
-  // Guard: unique items max 1 per fighter
-  if (item.unique && fighter.items.some(i => i.id === item.id)) {
-    addLog(`<span class="log-event">🎒 ${fighter.name} already has a ${item.name}!</span>`);
+  // Guard: unique/maxStack items can't exceed their configured cap on this fighter
+  if (isItemAtCap(fighter, item)) {
+    const capNote = item.unique ? `a ${item.name}` : `the max (${item.maxStack}) ${item.name}s`;
+    addLog(`<span class="log-event">🎒 ${fighter.name} already has ${capNote}!</span>`);
     return false;
   }
   // Guard: 16-slot cap measured by UNIQUE item types (stacks of the same item share one slot)
@@ -631,6 +649,22 @@ function showWaveLoot(item) {
   const picksEl = document.getElementById('wave-loot-picks');
   picksEl.innerHTML = '';
 
+  // Only one destination/action may ever be chosen for this loot drop. `resolved`
+  // is captured by every button below so a rapid double-click (or a second
+  // button in this same picker) can't run the resolution twice — which would
+  // double-grant the item and/or call chooseNextAICard() twice, advancing the
+  // enemy team an extra step or scheduling a second, overlapping battle-tick
+  // chain (see markResolved()).
+  let resolved = false;
+  function markResolved() {
+    if (resolved) return false;
+    resolved = true;
+    // Belt-and-suspenders: disable every button in this picker immediately so
+    // an already-queued extra click can't land on a still-live control either.
+    picksEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    return true;
+  }
+
   const allPicks   = state.playerPicks;
   const alivePicks = allPicks.filter(f => !f.dead);
 
@@ -674,18 +708,18 @@ function showWaveLoot(item) {
     // For Ghouls, route the item to the underlying Necromancer for capacity checks.
     const bagHolder    = (fighter.passiveKey === 'ghoul' && fighter._necromancer) ? fighter._necromancer : fighter;
     const typesFull    = usedSlots(bagHolder) >= 16 && !(bagHolder.items || []).some(i => i.id === item.id);
-    const alreadyUnique = item.unique && (bagHolder.items || []).some(i => i.id === item.id);
-    const blocked      = typesFull || alreadyUnique;
+    const atStackCap   = isItemAtCap(bagHolder, item);
+    const blocked      = typesFull || atStackCap;
     const slotsLeft    = 16 - usedSlots(bagHolder);
 
     let statusText;
     if (fighter.dead) {
       statusText = blocked
-        ? (alreadyUnique ? '(already has one)' : '(bag full)')
+        ? (atStackCap ? '(already has one)' : '(bag full)')
         : `💀 Dead — stores in bag for revival`;
     } else {
       statusText = blocked
-        ? (alreadyUnique ? '(already has one)' : '(bag full)')
+        ? (atStackCap ? (item.unique ? '(already has one)' : `(max ${item.maxStack})`) : '(bag full)')
         : `${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} free · HP ${fighter.hp}/${fighter.maxHp}`;
     }
 
@@ -704,6 +738,7 @@ function showWaveLoot(item) {
     `;
     if (!blocked) {
       btn.addEventListener('click', () => {
+        if (!markResolved()) return;
         overlay.style.display = 'none';
         state.aiActive._lootGranted = true;
         equipItem(fighter, item);
@@ -746,6 +781,7 @@ function showWaveLoot(item) {
         `;
         if (!atFull) {
           useBtn.addEventListener('click', () => {
+            if (!markResolved()) return;
             const healed = Math.min(potionHeal, fighter.maxHp - fighter.hp);
             fighter.hp   = Math.min(fighter.maxHp, fighter.hp + potionHeal);
             addLog(`<span class="log-event">🧪 Potion used on the spot! ${fighter.name} +${healed} HP (${fighter.hp}/${fighter.maxHp})</span>`);
@@ -770,6 +806,7 @@ function showWaveLoot(item) {
             </div>
           `;
           revBtn.addEventListener('click', () => {
+            if (!markResolved()) return;
             fighter.dead = false;
             fighter.hp   = reviveHp;
             addLog(`<span class="log-event">✨ Revive used on the spot! ${fighter.name} returns to ${reviveHp} HP!</span>`);
@@ -794,6 +831,7 @@ function showWaveLoot(item) {
           `;
           if (!atFull) {
             useBtn.addEventListener('click', () => {
+              if (!markResolved()) return;
               const healed = Math.min(reviveFallback, fighter.maxHp - fighter.hp);
               fighter.hp   = Math.min(fighter.maxHp, fighter.hp + reviveFallback);
               addLog(`<span class="log-event">✨ Revive used on the spot! No allies dead — ${fighter.name} +${healed} HP (${fighter.hp}/${fighter.maxHp})</span>`);
@@ -836,6 +874,10 @@ function showConsumablePicker(title, choices, onPick) {
   titleEl.style.cssText = 'font-weight:700;margin-bottom:12px;text-align:center;font-size:1rem;';
   modal.appendChild(titleEl);
 
+  // Only one target may ever be picked; guards against a stray double-click
+  // firing onPick() twice (which would consume the item twice).
+  let resolved = false;
+
   choices.forEach(f => {
     const btn = document.createElement('button');
     btn.style.cssText = [
@@ -850,7 +892,13 @@ function showConsumablePicker(title, choices, onPick) {
         <div style="font-weight:700">${f.name}</div>
         <div style="font-size:0.75rem;color:var(--muted)">${f.dead ? '💀 Defeated' : `${f.hp}/${f.maxHp} HP`}</div>
       </div>`;
-    btn.addEventListener('click', () => { overlay.remove(); onPick(f); renderWaveLobbyTeam(); });
+    btn.addEventListener('click', () => {
+      if (resolved) return;
+      resolved = true;
+      overlay.remove();
+      onPick(f);
+      renderWaveLobbyTeam();
+    });
     modal.appendChild(btn);
   });
 
@@ -897,7 +945,11 @@ function useConsumable(fighter, item) {
     addLog(`<span class="log-event">🧪 Potion! ${target.name} heals ${healed} HP (${target.hp}/${target.maxHp})</span>`);
 
   } else if (item.id === 'revive') {
-    // Dead Ghouls with _necromancer proxy to the Necromancer: revive brings back the original.
+    // A dying Ghoul's slot in playerPicks is reverted to its original Necromancer
+    // at the moment of death (see markFighterDead) — so state.playerPicks should
+    // already contain the real Necromancer here, never a dead Ghoul. This .map()
+    // is kept as a defensive fallback in case a Ghoul object ever reaches this
+    // list some other way; it's a no-op in the normal case.
     const rawDead = state.playerPicks.filter(f => f.dead);
     const reviveTargets = rawDead.map(f =>
       (f.passiveKey === 'ghoul' && f._necromancer) ? f._necromancer : f
@@ -905,7 +957,8 @@ function useConsumable(fighter, item) {
     // Apply a revive to a target — always 50% of that target's max HP.
     function doRevive(target) {
       const hp50 = Math.floor(target.maxHp * 0.5);
-      // Check if this target is a Necromancer whose Ghoul is currently in picks.
+      // Defensive fallback (see comment above): if a live Ghoul entry is still
+      // sitting in picks pointing at this Necromancer, swap it back now too.
       const ghoulInPicks = state.playerPicks.find(
         f => f.passiveKey === 'ghoul' && f._necromancer === target
       );
@@ -976,7 +1029,11 @@ function showItemTooltip(fighter, anchorEl) {
       // Dynamic tooltip: potion heal scales with wave set
       if (item.id === 'potion' && state.waveMode) {
         const ws = Math.floor((state.currentWave - 1) / 10);
-        slot.dataset.tooltip = `Use in the lobby to restore ${70 + ws * 20} HP to this card.`;
+        slot.dataset.tooltip = `Use in the lobby to restore ${70 + ws * 20} HP to this card. Stacks up to ${item.maxStack}.`;
+      } else if (item.id === 'revive' && !state.playerPicks.some(f => f.dead)) {
+        // No dead allies right now — Revive's real action here is the self-heal
+        // fallback, so don't show misleading "revive a dead ally" instructions.
+        slot.dataset.tooltip = 'No allies are dead — using this will heal the selected card instead.';
       } else {
         slot.dataset.tooltip = item.desc;
       }
@@ -997,7 +1054,11 @@ function showItemTooltip(fighter, anchorEl) {
       if (item.consumable && inLobby) {
         const useBtn = document.createElement('button');
         useBtn.className = 'ibt-slot-use';
-        useBtn.textContent = 'Use';
+        // Revive's action label reflects what it will actually do right now:
+        // there's nothing to revive when every ally is alive, so it heals instead.
+        useBtn.textContent = (item.id === 'revive' && !state.playerPicks.some(f => f.dead))
+          ? 'Heal selected card'
+          : 'Use';
         useBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           useConsumable(fighter, item); // always removes one occurrence
@@ -1108,6 +1169,7 @@ function makeFighter(classDef, passiveIndex) {
     // Thunderlord
     thunderlordPendingStrike: false,
     thunderlordMaxHpBonus: 0,   // total maxHp gained from kills; stripped on 10-wave reset
+    thunderlordSectionUsed: false, // caps Thunderlord to one activation per 10-wave section (see handleThunderlordKill)
     // Shield (separate from HP — absorbs damage before actual HP is reduced)
     shieldHp: 0,
     shieldHpMax: 0, // cumulative shield ever granted — lets Rage count consumed shield as "missing"
@@ -1182,6 +1244,21 @@ const screens = {
   wavelobby:   document.getElementById('screen-wave-lobby'),
   waveupgrade: document.getElementById('screen-wave-upgrade'),
   wavevictory: document.getElementById('screen-wave-victory'),
+};
+
+// Battle-arena DOM references for the two fighter slots and the two reserve
+// bars, looked up once here rather than via document.getElementById() on
+// every render (renderFighter/renderReserves run on nearly every state
+// change). These nodes exist for the life of the page and are only ever
+// mutated in place — never removed or replaced — so caching them is safe.
+// Same convention as `screens` above.
+const battleEls = {
+  'player-fighter':     document.getElementById('player-fighter'),
+  'ai-fighter':          document.getElementById('ai-fighter'),
+  'player-reserves':     document.getElementById('player-reserves'),
+  'ai-reserves':         document.getElementById('ai-reserves'),
+  'player-reserves-bar': document.getElementById('player-reserves-bar'),
+  'ai-reserves-bar':     document.getElementById('ai-reserves-bar'),
 };
 
 function showScreen(name) {
@@ -1545,6 +1622,10 @@ function renderRevealScreen() {
   const aiRow = document.getElementById('ai-team-reveal');
   playerRow.innerHTML = '';
   aiRow.innerHTML = '';
+  // Re-enable the Battle button every time this screen is (re)shown — it's
+  // disabled for the duration of revealAndBattle() to block rapid double-clicks.
+  const battleBtn = document.getElementById('btn-battle');
+  if (battleBtn) battleBtn.disabled = false;
 
   state.playerPicks.forEach((fighter, i) => {
     const card = buildCardEl(fighter, 'full');
@@ -1573,16 +1654,37 @@ function renderRevealScreen() {
 
 // ── START BATTLE ──────────────────────────────────────────
 function revealAndBattle() {
-  state.playerActive = state.playerPicks[0];
-  state.aiActive     = state.aiPicks[0];
-  showScreen('battle');
-  clearLog();
-  renderBattleScreen();
-  logEvent('⚔ Battle begins!');
-  applyOnEnterEffects(state.playerActive, 'player');
-  applyOnEnterEffects(state.aiActive, 'ai');
-  initCombatTurn(state.playerActive, state.aiActive);
-  setTimeout(runBattleTick, 1200);
+  // Guard against re-entry (e.g. the trigger button being clicked/spammed
+  // more than once) — without this, a second call schedules a second,
+  // independent runBattleTick loop that never gets cancelled.
+  if (state.battleRunning) return;
+  state.battleRunning = true;
+  clearTimeout(state.battleTimeout);
+  const btn = document.getElementById('btn-battle');
+  if (btn) btn.disabled = true;
+
+  try {
+    state.playerActive = state.playerPicks[0];
+    state.aiActive     = state.aiPicks[0];
+    showScreen('battle');
+    clearLog();
+    renderBattleScreen();
+    logEvent('⚔ Battle begins!');
+    applyOnEnterEffects(state.playerActive, 'player');
+    applyOnEnterEffects(state.aiActive, 'ai');
+    initCombatTurn(state.playerActive, state.aiActive);
+    state.battleTimeout = setTimeout(runBattleTick, 1200);
+  } catch (err) {
+    // The async battle-tick loop never actually started, so the lock and the
+    // button must be released here — otherwise a setup error would leave the
+    // Battle button permanently unusable for the rest of the session.
+    console.error('revealAndBattle failed to start:', err);
+    state.battleRunning = false;
+    if (btn) btn.disabled = false;
+    return;
+  }
+  // btn stays disabled — the screen has moved on to 'battle' so #btn-battle is
+  // no longer visible; renderRevealScreen() re-enables it next time it renders.
 }
 
 // Coin-flip for who opens; Assassin First Strike overrides.
@@ -1617,7 +1719,7 @@ function renderBattleScreen() {
 }
 
 function renderFighter(side, fighter) {
-  const el = document.getElementById(`${side}-fighter`);
+  const el = battleEls[`${side}-fighter`];
   if (!fighter) { el.innerHTML = ''; el.classList.remove('berserk', 'angel-revived', 'deaths-door'); return; }
 
   el.classList.toggle('berserk', !!fighter.berserk);
@@ -1678,7 +1780,8 @@ function buildPassiveDisplay(fighter) {
     return `🎯 ${fighter.doubleshotCount}/2 attacks`;
   }
   if (fighter.passiveKey === 'thunderlord') {
-    return fighter.thunderlordPendingStrike ? '⚡ Strike pending!' : '⚡ Active';
+    if (fighter.thunderlordPendingStrike) return '⚡ Strike pending!';
+    return fighter.thunderlordSectionUsed ? '⚡ Used this section' : '⚡ Ready';
   }
   if (fighter.passiveKey === 'rage') {
     const missing = (fighter.maxHp - fighter.hp) + (fighter.shieldHpMax - fighter.shieldHp);
@@ -1801,13 +1904,18 @@ function hideReserveTooltip() {
 }
 
 function renderReserves(side) {
-  const container = document.getElementById(`${side}-reserves`);
+  const container = battleEls[`${side}-reserves`];
+  const bar       = battleEls[`${side}-reserves-bar`];
   const picks = side === 'player' ? state.playerPicks : state.aiPicks;
   const active = side === 'player' ? state.playerActive : state.aiActive;
   container.innerHTML = '';
 
-  picks.forEach(fighter => {
-    if (fighter === active) return;
+  const reserveList = picks.filter(fighter => fighter !== active);
+  // Hide the whole bar (label + row) when there are no reserve cards to show,
+  // instead of leaving an empty "Enemy Reserves" label with no cards under it.
+  if (bar) bar.style.display = reserveList.length > 0 ? 'flex' : 'none';
+
+  reserveList.forEach(fighter => {
     const card = document.createElement('div');
     card.className = 'card' + (fighter.dead ? ' dead' : '') + (fighter.berserk ? ' berserk' : '') + (fighter.reborn ? ' reborn' : '');
     card.dataset.fighterId = fighter.id;
@@ -1963,7 +2071,7 @@ function applyBurnTick(side, fighter, callback) {
       }
     }
 
-    fighter.dead = true;
+    markFighterDead(fighter);
     logEvent(`💀 ${fighter.name} burned to death!`);
 
     // Thunderlord: burn counts as a kill for the opposite mage
@@ -2022,7 +2130,7 @@ function applyPoisonTick(side, fighter, callback) {
       }
     }
 
-    fighter.dead = true;
+    markFighterDead(fighter);
     logEvent(`💀 ${fighter.name} died from poison!`);
     animateDeath(side, () => {
       if (side === 'player') {
@@ -2857,6 +2965,38 @@ function spawnGhoul(necro, side) {
   checkBothReady();
 }
 
+// Central "this fighter just died" helper. Every place in the file that marks a
+// fighter dead should route through here instead of setting `.dead = true` directly.
+//
+// Why: when a Necromancer dies, spawnGhoul() replaces its slot in the picks array
+// with a temporary Ghoul summon (see above). If that Ghoul later dies too, anything
+// that looks at the picks array for "dead allies" (Revive included) would find the
+// Ghoul — a temporary summon, not a playable card — and revive/target it instead of
+// the real Necromancer. To prevent that, a dying Ghoul's slot is reverted back to
+// its original Necromancer card (also marked dead) right here, at the moment of
+// death, so every other system that scans playerPicks/aiPicks for dead cards
+// automatically finds the correct, real card with no special-casing required.
+//
+// The currently-dying fighter object itself is left untouched (still the Ghoul),
+// so its own death animation/log still shows the Ghoul that visually died.
+function markFighterDead(fighter) {
+  fighter.dead = true;
+  fighter.hp   = 0;
+  if (fighter.passiveKey === 'ghoul' && fighter._necromancer) {
+    const necro = fighter._necromancer;
+    necro.dead = true;
+    necro.hp   = 0;
+    if (state.playerPicks) {
+      const pIdx = state.playerPicks.indexOf(fighter);
+      if (pIdx !== -1) state.playerPicks[pIdx] = necro;
+    }
+    if (state.aiPicks) {
+      const aIdx = state.aiPicks.indexOf(fighter);
+      if (aIdx !== -1) state.aiPicks[aIdx] = necro;
+    }
+  }
+}
+
 function triggerFireStorm(necro, necroSide) {
   const oppSide   = necroSide === 'player' ? 'ai' : 'player';
   const oppPicks  = necroSide === 'player' ? state.aiPicks : state.playerPicks;
@@ -3009,9 +3149,18 @@ function applyNerfer(attackerSide, attacker, currentDefender) {
   renderReserves('ai');
 }
 
-// Thunderlord kill handler
+// Thunderlord kill handler.
+// Balance: Thunderlord may activate only once per ten-wave section (waves 1-10,
+// 11-20, 21-30, ...). `thunderlordSectionUsed` is stripped back to false by
+// hardResetFighter() at every 10-wave boundary, which is the only place
+// availability is restored. The same guard also protects against duplicate
+// activation if a single kill is ever reported through more than one code path
+// (e.g. a rapid double-click resolving the same death twice) — the second call
+// is simply a no-op.
 function handleThunderlordKill(mage, mageSide) {
   if (!mage || mage.dead || mage.passiveKey !== 'thunderlord') return;
+  if (mage.thunderlordSectionUsed) return;
+  mage.thunderlordSectionUsed = true;
   const killHpBonus  = 30 + (mage.spellbookBonus || 0);
   const killDmgBonus = 20 + (mage.spellbookBonus || 0);
   mage.maxHp                 += killHpBonus;
@@ -3019,7 +3168,8 @@ function handleThunderlordKill(mage, mageSide) {
   mage.hp     = Math.min(mage.maxHp, mage.hp + killHpBonus);
   mage.damage += killDmgBonus;
   mage.thunderlordPendingStrike = true;
-  addLog(`<span class="log-event">⚡ Thunderlord! ${mage.name} gains +${killHpBonus} max HP (${mage.hp}/${mage.maxHp}) and +${killDmgBonus} DMG (${mage.damage}), next enemy struck!</span>`);
+  const sectionNote = state.waveMode ? ' Won\'t trigger again until the next 10-wave section.' : '';
+  addLog(`<span class="log-event">⚡ Thunderlord! ${mage.name} gains +${killHpBonus} max HP (${mage.hp}/${mage.maxHp}) and +${killDmgBonus} DMG (${mage.damage}), next enemy struck!${sectionNote}</span>`);
   renderFighter(mageSide, mage);
 }
 
@@ -3246,7 +3396,7 @@ function triggerWolfBite(attackerSide, wolf, defender) {
     renderFighter(defenderSide, defender);
 
     if (!wbHorseBlock && defender.hp <= 0) {
-      defender.dead = true;
+      markFighterDead(defender);
       logEvent(`💀 ${defender.name} was eliminated by the Wolf Bite!`);
       // Necromancer Sacrifice: ghoul rises instead of normal death
       if (defender.passiveKey === 'sacrifice' && !defender.ghoulSpawned) {
@@ -3456,7 +3606,7 @@ function checkDeaths() {
       // If AI also died this turn, process that side normally
       if (aiDied) {
         handleThunderlordKill(state.playerActive, 'player');
-        state.aiActive.dead = true;
+        markFighterDead(state.aiActive);
         logEvent(`💀 ${state.aiActive.name} was defeated!`);
         animateDeath('ai', () => chooseNextAICard());
       } else {
@@ -3480,7 +3630,7 @@ function checkDeaths() {
     if (state.aiActive.passiveKey === 'sacrifice' && !state.aiActive.ghoulSpawned) {
       // If the player also died this same turn, mark them dead NOW so checkBothReady
       // (called inside spawnGhoul) doesn't restart the battle with a 0-HP player.
-      if (playerDied) state.playerActive.dead = true;
+      if (playerDied) markFighterDead(state.playerActive);
       spawnGhoul(state.aiActive, 'ai');
       if (playerDied) {
         logEvent(`💀 ${state.playerActive.name} was defeated!`);
@@ -3493,7 +3643,7 @@ function checkDeaths() {
     }
     // Player's active killed the AI card — check Thunderlord
     handleThunderlordKill(state.playerActive, 'player');
-    state.aiActive.dead = true;
+    markFighterDead(state.aiActive);
     logEvent(`💀 ${state.aiActive.name} was defeated!`);
     // Skip animateDeath here if the player's sacrifice branch (below) will call it —
     // calling it twice would start two parallel battle loops.
@@ -3505,7 +3655,7 @@ function checkDeaths() {
   if (playerDied) {
     // Sacrifice: Necromancer's ghoul rises instead of normal death
     if (state.playerActive.passiveKey === 'sacrifice' && !state.playerActive.ghoulSpawned) {
-      if (aiDied) state.aiActive.dead = true;
+      if (aiDied) markFighterDead(state.aiActive);
       spawnGhoul(state.playerActive, 'player');
       if (aiDied) {
         logEvent(`💀 ${state.aiActive.name} was defeated!`);
@@ -3515,7 +3665,7 @@ function checkDeaths() {
     }
     // AI's active killed the player card — check Thunderlord
     handleThunderlordKill(state.aiActive, 'ai');
-    state.playerActive.dead = true;
+    markFighterDead(state.playerActive);
     logEvent(`💀 ${state.playerActive.name} was defeated!`);
     // Skip animateDeath here if the AI's sacrifice branch (above) already called it.
     if (!aiSacrificeWillHandle) {
@@ -3637,7 +3787,7 @@ function checkBothReady() {
       logEvent(`⚡ Thunderlord strike! ${state.aiActive.name} takes ${tDmg1} damage as they enter! (${state.aiActive.hp} HP${state.aiActive.shieldHp > 0 ? ` +🛡${state.aiActive.shieldHp}` : ''})`);
       renderBattleScreen();
       if (state.aiActive.hp <= 0) {
-        state.aiActive.dead = true;
+        markFighterDead(state.aiActive);
         handleThunderlordKill(state.playerActive, 'player');
         logEvent(`💀 ${state.aiActive.name} was defeated by the Thunderlord strike!`);
         animateDeath('ai', () => chooseNextAICard());
@@ -3655,7 +3805,7 @@ function checkBothReady() {
       logEvent(`⚡ Enemy Thunderlord strike! ${state.playerActive.name} takes 30 damage as they enter! (${state.playerActive.hp} HP${state.playerActive.shieldHp > 0 ? ` +🛡${state.playerActive.shieldHp}` : ''})`);
       renderBattleScreen();
       if (state.playerActive.hp <= 0) {
-        state.playerActive.dead = true;
+        markFighterDead(state.playerActive);
         handleThunderlordKill(state.aiActive, 'ai');
         logEvent(`💀 ${state.playerActive.name} was defeated by Thunderlord strike!`);
         animateDeath('player', () => {
@@ -3692,6 +3842,7 @@ function renderTurnIndicator() {
 // ── END GAME ──────────────────────────────────────────────
 function endGame(playerWon) {
   clearTimeout(state.battleTimeout);
+  state.battleRunning = false;
   document.getElementById('battle-log')?.classList.remove('log-visible');
   document.getElementById('btn-log')?.classList.remove('log-open');
   document.removeEventListener('click', _logOutsideHandler);
@@ -3886,12 +4037,49 @@ function shuffle(arr) {
   return arr;
 }
 
+// Sound elements are the single shared <audio> tags already declared in index.html
+// (one per sound id) — every helper below reuses those same elements rather than
+// creating new Audio() instances per call, so there's no unbounded pool to manage.
+//
+// Setting `.currentTime` on an element that hasn't finished loading yet
+// (readyState === HAVE_NOTHING) throws synchronously (InvalidStateError) — most
+// likely right after a rapid restart, or on a slow/older machine. Left
+// unguarded, that throw propagates out and aborts whatever caller invoked it —
+// e.g. an in-flight attack/animation setTimeout callback — silently breaking
+// the rest of that callback, including any code after it that schedules the
+// next battle tick. That is the most likely underlying cause of "clicking
+// fast crashes/freezes the game", so every direct <audio> access in the file
+// goes through one of these two guarded helpers instead of touching the
+// element directly.
+function safeResetAudio(audio) {
+  if (!audio) return;
+  try { if (audio.readyState > 0) audio.currentTime = 0; } catch (err) { /* not ready yet — ignore */ }
+}
+function safePlayAudio(audio) {
+  if (!audio) return;
+  try {
+    const p = audio.play();
+    // An interrupted-play rejection is an expected race under rapid clicks/
+    // attacks, not a real error — swallow it instead of warning every time.
+    if (p !== undefined) p.catch(() => {});
+  } catch (err) { /* playback race — ignore */ }
+}
+
+// Short per-id cooldown so a burst of rapid clicks can't restart the same
+// sound element dozens of times per second (wasted work, and it makes the
+// sound itself feel like a stuttering mess).
+const _soundLastPlayed = {};
+const SOUND_COOLDOWN_MS = 40;
+
 function playSound(soundId) {
+  const now = Date.now();
+  if (_soundLastPlayed[soundId] && now - _soundLastPlayed[soundId] < SOUND_COOLDOWN_MS) return;
+  _soundLastPlayed[soundId] = now;
+
   const audio = document.getElementById(soundId);
   if (!audio) return;
-  audio.currentTime = 0;
-  const p = audio.play();
-  if (p !== undefined) p.catch(err => console.warn(`Audio failed: ${soundId}`, err.message));
+  safeResetAudio(audio);
+  safePlayAudio(audio);
 }
 
 function playAttackSound(fighter) {
@@ -4259,7 +4447,7 @@ function showModal(section) {
       <p>Enemies grow stronger every 10 waves (each completed set of 10):</p>
       <ul>
         <li><strong>Peon</strong> — 60 HP / 35 DMG / Leather Armor. <em>Double Strike:</em> attacks twice every other turn. Scales: +10 HP and +5 DMG per 10 waves.</li>
-        <li><strong>Dart-Peon</strong> — 60 HP / 30 DMG / Leather Armor. Appears from wave 6 onward. <em>Poison Dart:</em> every attack inflicts Poison on the target — 10 magical damage per turn and −50% healing effectiveness. The poison clears when the affected card is benched or dies. Scales every other set: +15 HP and +5 DMG at sets 2 and 4.</li>
+        <li><strong>Dart-Peon</strong> — 60 HP / 30 DMG / Leather Armor. Appears from wave 6 onward. <em>Poison Dart:</em> every attack inflicts Poison on the target — 10 magical damage per turn and −50% healing effectiveness. The poison persists even while the card is benched, and only clears on death or at the next 10-wave section boundary (waves 11/21/31/41...). Scales every other set: +15 HP and +5 DMG at sets 2 and 4.</li>
         <li><strong>Knight</strong> — 100 HP / 55 DMG / Mail Armor. <em>Iron Guard:</em> blocks the first direct attack from each new player fighter. Scales: +15 HP and +10 DMG per 10 waves.</li>
         <li><strong>Dragon</strong> — 1200 HP / 130 DMG / Mail Armor. Both its base attack and <em>Inferno</em> are fully magical (bypass armor). <em>Inferno:</em> every 3rd attack breathes fire on all living player cards for 50 magical damage and inflicts −50% healing and −10 magic resistance on the active target. Wave 50 only — does not scale.</li>
       </ul>
@@ -4478,7 +4666,11 @@ function softResetFighter(fighter) {
   fighter.shieldMultiplier   = 1;
   // Reset per-wave debuffs and one-shot passives
   fighter.healingReductionPct = 0;
-  fighter.poisonDotAmount     = 0;    // poison clears when benched (wave ends)
+  // NOTE: poisonDotAmount is intentionally NOT reset here. Dart-Peon poison is
+  // persistent state on the fighter itself — it must survive being benched and
+  // survive normal wave-to-wave transitions, ticking again whenever this card
+  // becomes active. It is only cleared at 10-wave section boundaries, in
+  // hardResetFighter() below (matches the milestone-wave poison-reset rule).
   fighter.bearHealUsed        = false; // Bear Form surge resets each wave
 }
 
@@ -4542,38 +4734,57 @@ function selectWaveActive(fighter, cardEl) {
 
 function startWave() {
   if (!state.waveSelectedActive) return;
+  // Guard against re-entry (double-click / rapid re-trigger) — without this,
+  // a second call schedules a second, independent runBattleTick loop that
+  // never gets cancelled, compounding with every extra call.
+  if (state.battleRunning) return;
+  state.battleRunning = true;
+  clearTimeout(state.battleTimeout);
+  const btn = document.getElementById('btn-wave-fight');
+  if (btn) btn.disabled = true;
 
-  const waveIdx       = state.currentWave - 1;
-  const composition   = WAVE_TABLE[waveIdx] || ['peon'];
+  try {
+    const waveIdx       = state.currentWave - 1;
+    const composition   = WAVE_TABLE[waveIdx] || ['peon'];
 
-  // Build fresh AI team from WAVE_TABLE
-  state.aiPicks  = composition.map(type => buildWaveEnemy(type));
-  state.aiActive = state.aiPicks[0];
+    // Build fresh AI team from WAVE_TABLE
+    state.aiPicks  = composition.map(type => buildWaveEnemy(type));
+    state.aiActive = state.aiPicks[0];
 
-  // Waves 10, 20, 30, 40: guarantee the last enemy carries a random loot drop
-  if ([10, 20, 30, 40].includes(state.currentWave)) {
-    const lastEnemy = state.aiPicks[state.aiPicks.length - 1];
-    if (!lastEnemy.lootItem) lastEnemy.lootItem = rollLootItem();
+    // Waves 10, 20, 30, 40: guarantee the last enemy carries a random loot drop
+    if ([10, 20, 30, 40].includes(state.currentWave)) {
+      const lastEnemy = state.aiPicks[state.aiPicks.length - 1];
+      if (!lastEnemy.lootItem) lastEnemy.lootItem = rollLootItem();
+    }
+
+    // Soft-reset living player fighters and set the chosen active card
+    state.playerPicks.forEach(f => { if (!f.dead) softResetFighter(f); });
+    state.playerActive       = state.waveSelectedActive;
+    state.waveSelectedActive = null;
+
+    // Reset shared combat flags
+    // Note: playerShield / aiShield (Cleric pool) intentionally NOT reset here —
+    // the pool persists between waves so shielding built up carries forward.
+    // It is only cleared at 10-wave hard-reset boundaries (endWave hard-reset block).
+    state.playerSkipNextTurn = false;
+    state.aiSkipNextTurn     = false;
+    state.paused             = false;
+
+    clearLog();
+    showScreen('battle');
+    renderBattleScreen();
+    logEvent(`⚔ Wave ${state.currentWave} begins!`);
+    checkBothReady();
+  } catch (err) {
+    // Setup failed before the async battle-tick loop actually started — release
+    // the lock so the player isn't permanently stuck on the wave lobby screen.
+    console.error('startWave failed to start:', err);
+    state.battleRunning = false;
+    if (btn) btn.disabled = false;
+    return;
   }
-
-  // Soft-reset living player fighters and set the chosen active card
-  state.playerPicks.forEach(f => { if (!f.dead) softResetFighter(f); });
-  state.playerActive       = state.waveSelectedActive;
-  state.waveSelectedActive = null;
-
-  // Reset shared combat flags
-  // Note: playerShield / aiShield (Cleric pool) intentionally NOT reset here —
-  // the pool persists between waves so shielding built up carries forward.
-  // It is only cleared at 10-wave hard-reset boundaries (endWave hard-reset block).
-  state.playerSkipNextTurn = false;
-  state.aiSkipNextTurn     = false;
-  state.paused             = false;
-
-  clearLog();
-  showScreen('battle');
-  renderBattleScreen();
-  logEvent(`⚔ Wave ${state.currentWave} begins!`);
-  checkBothReady();
+  // btn stays disabled — showWaveLobby() re-disables/re-enables it correctly
+  // (based on card selection) the next time the lobby screen is shown.
 }
 
 // Called at every 10-wave boundary to strip in-combat permanent bonuses.
@@ -4603,6 +4814,9 @@ function hardResetFighter(fighter) {
     fighter.hp    = Math.min(fighter.hp, fighter.maxHp);
     fighter.thunderlordMaxHpBonus = 0;
   }
+  // Thunderlord can activate once per ten-wave section — restore availability
+  // for the section that's about to start.
+  fighter.thunderlordSectionUsed = false;
 
   // Joker Ace maxHp bonus (+50 on heads): subtract so Ace can fire again next cycle
   const aceBonus = fighter.aceHpBonus || 0;
@@ -4619,6 +4833,8 @@ function hardResetFighter(fighter) {
   fighter.shieldHp         = 0;   // Cleric-granted shields: wiped at 10-wave boundary
   fighter.shieldHpMax      = 0;   // Barbarian Rage: clear consumed-shield history at boundary
   fighter.steadyAimBonus   = 0;  // Marksman Steady Aim: strips cross-wave accumulated bonus
+  fighter.poisonDotAmount  = 0;  // Dart-Peon poison: only cleared at 10-wave section boundaries
+                                  // (waves 11/21/31/41, ...) — persists across normal waves/bench swaps
 
   // Necromancer: reset ghoul spawn stats to base so the next ghoul starts fresh each set
   if (fighter.passiveKey === 'sacrifice' || fighter.passiveKey === 'reborn') {
@@ -4639,6 +4855,7 @@ function hardResetFighter(fighter) {
 
 function endWave() {
   clearTimeout(state.battleTimeout);
+  state.battleRunning = false;
 
   if (state.currentWave >= 50) {
     setTimeout(() => showScreen('wavevictory'), 700);
@@ -4858,7 +5075,7 @@ function triggerDragonFireball(dragon, dragonSide, callback) {
 
     // Check if active opponent was killed by the fireball
     if (oppActive && !oppActive.dead && oppActive.hp <= 0) {
-      oppActive.dead = true;
+      markFighterDead(oppActive);
       logEvent(`💀 ${oppActive.name} was incinerated by Dragon's Inferno!`);
       animateDeath(oppSide, () => {
         if (oppSide === 'player') {
@@ -4926,7 +5143,7 @@ function _startMusicTrack(kind, which) {
   // Pause all music tracks
   ['sound-menu', 'sound-menu2', 'sound-game', 'sound-game2'].forEach(id => {
     const a = document.getElementById(id);
-    if (a) { a.pause(); a.currentTime = 0; }
+    if (a) { a.pause(); safeResetAudio(a); }
   });
 
   _musicCtx.kind        = kind;
@@ -4948,15 +5165,15 @@ function _startMusicTrack(kind, which) {
     } else {
       // Replay the same track
       audio.addEventListener('ended', onEnded, { once: true });
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
+      safeResetAudio(audio);
+      safePlayAudio(audio);
     }
   }
 
   audio.addEventListener('ended', onEnded, { once: true });
   audio.volume = getMusicVolume();
-  audio.currentTime = 0;
-  audio.play().catch(() => {});
+  safeResetAudio(audio);
+  safePlayAudio(audio);
 }
 
 function playMenuMusic() {
@@ -4971,7 +5188,7 @@ function stopAllMusic() {
   ++_musicVer; // invalidate any pending 'ended' handlers
   ['sound-menu', 'sound-menu2', 'sound-game', 'sound-game2'].forEach(id => {
     const audio = document.getElementById(id);
-    if (audio) { audio.pause(); audio.currentTime = 0; }
+    if (audio) { audio.pause(); safeResetAudio(audio); }
   });
   _musicCtx.kind = null;
 }
