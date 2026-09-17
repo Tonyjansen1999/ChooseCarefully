@@ -1,0 +1,17 @@
+Copyright (c) 2026 Tony Jansen
+
+All Rights Reserved.
+
+This license covers the source code of this repository — index.html, style.css,
+script.js, and any other code files — but explicitly does NOT cover the
+contents of the Images/ and Sounds/ directories, which are separately licensed
+under a permissive license (see ASSETS_LICENSE.md).
+
+No permission is granted to copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the source code, in whole or in part,
+without prior written permission from the copyright holder.
+
+The source code is made publicly viewable on GitHub for portfolio and
+demonstration purposes only. Viewing and running the code for personal,
+non-distributed use is permitted; redistribution, reuse in other projects, and
+commercial use are not, absent explicit permission.

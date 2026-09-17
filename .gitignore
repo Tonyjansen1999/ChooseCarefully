@@ -1,0 +1,17 @@
+# Claude Code project config (local tool settings, local machine paths — not
+# meant to be shared publicly or needed by anyone cloning the repo)
+.claude/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs / temp
+*.log
+*.tmp
