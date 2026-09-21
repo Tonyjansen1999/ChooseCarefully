@@ -1,9 +1,9 @@
 # ChooseCarefully
 
-A browser-based card-battle game built with vanilla HTML, CSS, and JavaScript —
+A browser-based card-battle game built with vanilla HTML, CSS, and JavaScript -
 no frameworks, no build step, no dependencies. Pick a team of 3 fighters, each
 with a choice of two passive abilities, and battle it out against an AI
-opponent — or survive as many of 50 escalating waves as you can in Rogue Mode.
+opponent - or survive as many of 50 escalating waves as you can in Rogue Mode.
 
 ## Play it
 
