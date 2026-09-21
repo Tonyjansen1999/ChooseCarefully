@@ -205,7 +205,7 @@ const CLASSES = [
   {
     id: 'rider',
     name: 'Rider',
-    image: 'Images/rider.png',
+    image: 'Images/Rider.png',
     baseHp: 70,
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
@@ -363,7 +363,7 @@ function buildPeon() {
   const dmg = 35  + sets * 5;
   const enemy = {
     ..._waveEnemyBase(),
-    id: 'peon', name: 'Peon', image: 'Images/peon.png',
+    id: 'peon', name: 'Peon', image: 'Images/Peon.png',
     hp, maxHp: hp, damage: dmg, baseDamage: dmg,
     armorType: 'leather', armorValue: 10,
     passiveKey: 'peon_doubleattack', passiveName: 'Double Strike',
@@ -1098,7 +1098,7 @@ function attachBagIcon(containerEl, fighter) {
   if (existing) existing.remove();
   const img = document.createElement('img');
   img.className = 'card-bag-icon';
-  img.src = 'Images/bag.png';
+  img.src = 'Images/Bag.png';
   img.alt = 'Bag';
   img.title = 'Items';
   img.addEventListener('mouseenter', (e) => { e.stopPropagation(); showItemTooltip(fighter, img); });
@@ -2018,7 +2018,7 @@ function applyBurnTick(side, fighter, callback) {
     const horseDiedBurn = fighter.horseHp <= 0;
     if (horseDiedBurn) {
       fighter.isMounted = false;
-      fighter.image = 'Images/mouse.png';
+      fighter.image = 'Images/Mouse.png';
       if (fighter.passiveKey === 'parry') fighter.parryToggle = true;
     }
     addLog(`<span class="log-event">🔥 Burn hits the horse! (${fighter.horseHp}/${fighter.horseHpMax} HP)</span>`);
@@ -2434,7 +2434,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
       const horseDiedRetal = snapHorseHp <= 0;
       if (horseDiedRetal) {
         attacker.isMounted = false;
-        attacker.image = 'Images/mouse.png';
+        attacker.image = 'Images/Mouse.png';
         if (attacker.passiveKey === 'parry') attacker.parryToggle = true;
       }
       setTimeout(() => {
@@ -2476,7 +2476,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
       const horseDied = snapHp <= 0;
       if (horseDied) {
         attacker.isMounted = false;
-        attacker.image     = 'Images/mouse.png';
+        attacker.image     = 'Images/Mouse.png';
         if (attacker.passiveKey === 'parry') attacker.parryToggle = true;
       }
       setTimeout(() => {
@@ -2884,7 +2884,7 @@ function applyPassiveHeal(fighter) {
 
 function dismountRider(fighter, side) {
   fighter.isMounted = false;
-  fighter.image = 'Images/mouse.png';
+  fighter.image = 'Images/Mouse.png';
   if (fighter.passiveKey === 'parry') fighter.parryToggle = true;
   addLog(`<span class="log-event">🐴 The horse was defeated! ${fighter.name} dismounts as a mouse!</span>`);
   renderFighter(side, fighter);
@@ -2898,7 +2898,7 @@ function remountRider(fighter, side) {
   fighter.horseReviveUsed   = true;
   fighter.dismountBonus     = 0;
   fighter.dismountedAttacks = 0;
-  fighter.image             = 'Images/rider.png';
+  fighter.image             = 'Images/Rider.png';
   addLog(`<span class="log-event">🐴 ${fighter.name}'s horse revives with ${reviveHp} HP! Remounted! Anger bonus resets.</span>`);
   renderFighter(side, fighter);
 }
@@ -2910,7 +2910,7 @@ function spawnGhoul(necro, side) {
   const ghoul = {
     id: 'ghoul_' + Date.now(),
     name: 'Ghoul',
-    image: 'Images/ghoul.png',
+    image: 'Images/Ghoul.png',
     hp: necro.ghoulHp,
     maxHp: necro.ghoulHpMax,
     damage: necro.ghoulDamage,
@@ -3093,7 +3093,7 @@ function triggerLavaBlast(shaman, shamSide, defender, defenderSide) {
     overkill = 0; // no reserve chain when horse is involved
     if (defender.horseHp <= 0) {
       defender.isMounted = false;
-      defender.image = 'Images/mouse.png';
+      defender.image = 'Images/Mouse.png';
       if (defender.passiveKey === 'parry') defender.parryToggle = true;
       // Excess damage from killing the horse bleeds into the Rider — stops there (no further reserve chain)
       horseOverkillOnRider = Math.max(0, lavaDmg - prevHorseHp);
@@ -4864,7 +4864,7 @@ function hardResetFighter(fighter) {
   if (fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') {
     fighter.isMounted         = true;
     fighter.horseHp           = fighter.horseHpMax; // restore to full (80 HP)
-    fighter.image             = 'Images/rider.png';
+    fighter.image             = 'Images/Rider.png';
     fighter.dismountBonus     = 0;
     fighter.horseReviveUsed   = false;
   }
