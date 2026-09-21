@@ -687,7 +687,7 @@ function showWaveLoot(item) {
         } else if (item.id === 'revive') {
           const dead = state.playerPicks.find(f => f.dead && f !== neediest);
           if (dead) {
-            dead.dead = false; dead.hp = 50;
+            reviveFighter(dead, 50);
             addLog(`<span class="log-event">✨ All cards had a Revive! ${neediest.name}'s was auto-used (${dead.name} revived) to make room.</span>`);
           } else {
             neediest.hp = Math.min(neediest.maxHp, neediest.hp + 25);
@@ -807,8 +807,7 @@ function showWaveLoot(item) {
           `;
           revBtn.addEventListener('click', () => {
             if (!markResolved()) return;
-            fighter.dead = false;
-            fighter.hp   = reviveHp;
+            reviveFighter(fighter, reviveHp);
             addLog(`<span class="log-event">✨ Revive used on the spot! ${fighter.name} returns to ${reviveHp} HP!</span>`);
             closeLootAndContinue();
           });
@@ -965,12 +964,10 @@ function useConsumable(fighter, item) {
       if (ghoulInPicks) {
         const gIdx = state.playerPicks.indexOf(ghoulInPicks);
         if (gIdx !== -1) state.playerPicks[gIdx] = target;
-        target.dead = false;
-        target.hp   = hp50;
+        reviveFighter(target, hp50);
         addLog(`<span class="log-event">✨ Revive! ${target.name} rises from the Ghoul at ${hp50} HP!</span>`);
       } else {
-        target.dead = false;
-        target.hp   = hp50;
+        reviveFighter(target, hp50);
         addLog(`<span class="log-event">✨ Revive! ${target.name} is revived to ${hp50} HP (50%)!</span>`);
       }
     }
@@ -1743,7 +1740,7 @@ function renderFighter(side, fighter) {
     <div class="card-info">
       <h3>${fighter.name}</h3>
       <div class="stats">
-        <span class="hp">HP ${fighter.hp}${fighter.shieldHp > 0 ? `<span class="hp-shield"> +${fighter.shieldHp}🛡</span>` : ''}${horseNote}</span>
+        <span class="hp">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? `<span class="hp-shield"> +${fighter.shieldHp}🛡</span>` : ''}${horseNote}</span>
         <span class="dmg">DMG ${fighter.damage}</span>
       </div>
       <div class="hp-bar-wrap">
@@ -1935,7 +1932,7 @@ function renderReserves(side) {
       <div class="card-info">
         <h3>${fighter.name}</h3>
         <div class="stats">
-          <span class="hp">HP ${fighter.hp}${fighter.shieldHp > 0 ? `<span class="hp-shield"> +${fighter.shieldHp}🛡</span>` : ''}</span>
+          <span class="hp">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? `<span class="hp-shield"> +${fighter.shieldHp}🛡</span>` : ''}</span>
         </div>
         <div class="hp-bar-wrap">
           <div class="hp-bar" style="width:${hpPct}%;background:${hpColor};"></div>
@@ -2997,6 +2994,19 @@ function markFighterDead(fighter) {
   }
 }
 
+// Bringing a fighter back — via the Revive item, or the full team heal+revive
+// at 10-wave section boundaries — should give it a clean slate, not resume
+// mid-death with whatever burn/poison/healing-reduction it had when it died.
+// Centralized here so every revive path (Revive item x3, milestone-wave full
+// revive) clears the same set of lingering debuffs consistently.
+function reviveFighter(fighter, hp) {
+  fighter.dead   = false;
+  fighter.hp     = hp;
+  fighter.burnAmount         = 0;
+  fighter.poisonDotAmount    = 0;
+  fighter.healingReductionPct = 0;
+}
+
 function triggerFireStorm(necro, necroSide) {
   const oppSide   = necroSide === 'player' ? 'ai' : 'player';
   const oppPicks  = necroSide === 'player' ? state.aiPicks : state.playerPicks;
@@ -3944,6 +3954,13 @@ function buildCardEl(data, size) {
 
   const hp  = data.hp  ?? data.baseHp;
   const dmg = data.damage ?? data.baseDamage;
+  // data.maxHp only exists on an actual fighter instance (not a raw class
+  // definition on the selection screen), and it's the same value as `hp`
+  // fresh into a fight — showing "current/max" only when maxHp is known
+  // avoids a redundant "170/170" on the class-pick screen while still giving
+  // full clarity everywhere HP can actually be damaged (choose-screen,
+  // Rogue Mode lobby, etc.).
+  const hpText = (data.maxHp !== undefined) ? `${hp}/${data.maxHp}` : `${hp}`;
 
   let passiveHtml = '';
   if (data.passiveName) {
@@ -3962,7 +3979,7 @@ function buildCardEl(data, size) {
     <div class="card-info">
       <h3>${data.name}</h3>
       <div class="stats">
-        <span class="hp">HP ${hp}</span>
+        <span class="hp">HP ${hpText}</span>
         <span class="dmg">DMG ${dmg}</span>
       </div>
       ${passiveHtml}
@@ -4694,7 +4711,7 @@ function showWaveLobby() {
   healBanner.style.display = isHealWave ? 'block' : 'none';
 
   if (isHealWave) {
-    state.playerPicks.forEach(f => { f.hp = f.maxHp; f.dead = false; });
+    state.playerPicks.forEach(f => reviveFighter(f, f.maxHp));
   }
 
   state.waveSelectedActive = null;

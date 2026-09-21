@@ -352,7 +352,16 @@ html, body {
   justify-content: center;
   gap: 20px;
   width: 100%;
-  min-height: 0;
+  /* No min-height override here on purpose: with flex:1 alone, the arena's
+     default min-height is content-based, so it can grow #screen-battle taller
+     than the viewport when space is tight (e.g. DevTools docked at the
+     bottom shrinking window height) and let #screen-battle's own
+     overflow-y:auto scroll to it. An explicit `min-height: 0` here would let
+     the arena compress *below* its fighter cards' fixed height instead —
+     the cards then overflow the shrunk arena box and visually render behind
+     the AI reserves bar below it (a later sibling, so it paints on top).
+     See: pause button getting hidden behind "Enemy Reserves" on short
+     viewports. */
 }
 
 .fighter-slot {
