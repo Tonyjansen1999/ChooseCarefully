@@ -1424,10 +1424,17 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 22px rgba(255,209,102,.55);
 }
 .wave-lobby-team .card.dead {
-  opacity: 0.38;
+  opacity: 0.5;
   filter: grayscale(1);
   cursor: not-allowed;
-  pointer-events: none;
+  /* No pointer-events:none here: a dead card can't be picked (JS attaches no
+     click handler to it), but its bag must stay hoverable so a Revive held by
+     a fallen card can still be used from the lobby. */
+}
+.wave-lobby-team .card.dead .card-bag-icon {
+  opacity: 1;
+  cursor: pointer;
+  filter: drop-shadow(0 0 4px var(--gold));
 }
 
 /* Upgrade overlay */
@@ -1673,7 +1680,26 @@ input[type="range"]::-moz-range-thumb {
   width: 92%;
   box-shadow: 0 8px 32px rgba(0,0,0,.8);
   text-align: center;
+  position: relative;
 }
+.wave-loot-skip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wave-loot-skip:hover { color: var(--text); border-color: var(--accent2); }
 .wave-loot-header {
   display: flex;
   align-items: center;
@@ -1853,3 +1879,74 @@ input[type="range"]::-moz-range-thumb {
 /* =========================================================
    SCROLLBAR
    ========================================================= */
+
+/* =========================================================
+   PORTRAIT PHONE BATTLE LAYOUT  (≤ 768 px wide AND upright)
+   Uses the full screen height instead of leaving it empty:
+   each side gets a large active card with its two reserves
+   stacked beside it, enemy on top, you on the bottom, and the
+   controls in the middle. Passive text is hidden on the cards
+   (only HP / DMG shown) — hover or tap a card for the tooltip.
+   Landscape and desktop are unaffected. Kept at the END of the
+   file so it wins over the earlier ≤480 / ≤360 size rules.
+   ========================================================= */
+@media (max-width: 768px) and (orientation: portrait) {
+  :root { --pv-card-h: min(33vh, 320px); }
+  @supports (height: 1dvh) {
+    :root { --pv-card-h: min(33dvh, 320px); }
+  }
+
+  #screen-battle {
+    /* Outer 1fr columns soak up the width so the full-width controls row
+       can't stretch the two card columns */
+    grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      ".  ai-res     ai-slot     ."
+      "controls controls controls controls"
+      ".  player-res player-slot .";
+    justify-content: center;
+    align-content: center;
+    column-gap: 14px;
+    row-gap: 2.5vh;
+    padding: 88px 10px 12px;   /* top padding clears the Menu / Home buttons */
+  }
+
+  /* Large active cards */
+  .battle-card {
+    height: var(--pv-card-h);
+    width: calc(var(--pv-card-h) * 0.68);
+  }
+  .battle-card .card-info { padding: 6px 8px; }
+  .battle-card .card-info h3 { font-size: 0.85rem; }
+  .battle-card .card-info .stats {
+    font-size: 0.72rem;
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    justify-content: space-between;
+  }
+  /* Only HP + DMG on the card — passive details live in the hover/tap tooltip */
+  .battle-card .passive-label { display: none; }
+
+  /* Reserves: two cards stacked, together as tall as the active card */
+  .reserves-row { gap: 8px; }
+  .reserves-row .card {
+    height: calc((var(--pv-card-h) - 8px) / 2);
+    width: calc((var(--pv-card-h) - 8px) / 2 * 0.7);
+  }
+  .reserves-row .card-info { padding: 4px 5px; }
+  .reserves-row .card-info h3 {
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Bring HP back on reserve cards (hidden by the ≤480 rule) — needed to
+     see who deserves a potion */
+  .reserves-row .card-info .stats {
+    display: flex;
+    font-size: 0.56rem;
+    white-space: nowrap;
+  }
+}

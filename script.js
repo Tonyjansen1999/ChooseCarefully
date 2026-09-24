@@ -140,11 +140,11 @@ const CLASSES = [
     id: 'deathknight',
     name: 'Death Knight',
     image: 'Images/DeathKnight.png',
-    baseHp: 150,
+    baseHp: 140,
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 2,
-    ultimateDescription: 'Every 2 attacks: exponential healing — first +10 HP, then +20, +40 (doubles each time, cappeed at +40 for wave mode).',
+    ultimateDescription: 'Every 2 attacks: exponential healing — first +10 HP, then +20, +40 (doubles each time, capped at +40 in Rogue Mode).',
     passives: [
       {
         key: 'deathgrip',
@@ -162,7 +162,7 @@ const CLASSES = [
     id: 'joker',
     name: 'Joker',
     image: 'Images/Joker.png',
-    baseHp: 100,
+    baseHp: 110,
     baseDamage: 30,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
@@ -188,17 +188,17 @@ const CLASSES = [
     baseDamage: 30,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 1,
-    ultimateDescription: 'After first attack, transforms: Bear Form (150 HP, 50 DMG, fully healed) or Wolf Form (120 HP, 60 DMG, attacks twice per turn + 25 Wolf Bite).',
+    ultimateDescription: 'After first attack, transforms: Bear Form (160 HP, 50 DMG, fully healed) or Wolf Form (130 HP, 60 DMG, attacks twice per turn + 25 Wolf Bite).',
     passives: [
       {
         key: 'bearform',
         name: 'Bear Form',
-        description: 'After first attack (✨ Magical), transforms into a mighty bear: becomes 150 HP / 50 ⚔ Physical DMG and heals to full immediately.',
+        description: 'After first attack (✨ Magical), transforms into a mighty bear: becomes 160 HP / 50 ⚔ Physical DMG and heals to full immediately.',
       },
       {
         key: 'wolfform',
         name: 'Wolf Form',
-        description: 'After first attack (✨ Magical), transforms into a swift wolf: becomes 120 HP / 60 DMG and attacks twice per turn — the second hit (Wolf Bite) always deals exactly 25 ⚔ Physical damage.',
+        description: 'After first attack (✨ Magical), transforms into a swift wolf: becomes 130 HP / 60 DMG and attacks twice per turn — the second hit (Wolf Bite) always deals exactly 25 ⚔ Physical damage.',
       },
     ],
   },
@@ -220,7 +220,7 @@ const CLASSES = [
       {
         key: 'parry',
         name: 'Parry',
-        description: 'While dismounted, blocks every other incoming attack.',
+        description: 'While dismounted, blocks the first incoming attack, then every third attack after that.',
       },
     ],
   },
@@ -229,7 +229,7 @@ const CLASSES = [
     name: 'Necromancer',
     image: 'Images/Necromancer.png',
     baseHp: 200,
-    baseDamage: 20,
+    baseDamage: 25,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
     ultimateDescription: 'Each turn: takes 20 self-damage. Every 3 turns: Fire Storm hits ALL living opponents for 30 ✨ Magical.',
@@ -347,7 +347,7 @@ function _waveEnemyBase() {
     transformed: false, wolfForm: false,
     _magicBonus: 0, attacksReceived: 0, berserk: false,
     isMounted: false, horseHp: 0, horseHpMax: 0,
-    dismountedAttacks: 0, dismountBonus: 0, horseReviveUsed: false, parryToggle: false,
+    dismountedAttacks: 0, dismountBonus: 0, horseReviveUsed: false, parryToggle: false, parryWait: 0,
     necroTurnCount: 0, ghoulHp: 0, ghoulHpMax: 0, ghoulDamage: 0,
     ghoulSpawned: false, rebornUsed: false, reborn: false,
     lightningShieldActive: false, shamHealCount: 0, shamLavaCount: 0,
@@ -524,7 +524,7 @@ const WAVE_UPGRADES = [
 // ── Wave Item Pool ────────────────────────────────────────
 const WAVE_ITEMS = {
   potion:      { id: 'potion',      name: 'Health Potion', image: 'Images/Potion.png',      rarity: 'common',    weight: 35, consumable: true,  unique: false, maxStack: 3, desc: 'Use in the lobby to restore 70 HP to this card. Stacks up to 3.' },
-  revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 14, consumable: true,  unique: true,  desc: 'Use in the lobby: revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
+  revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 14, consumable: true,  unique: true,  desc: 'Use in the lobby (even from a fallen card bag): revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
   power:       { id: 'power',       name: 'Power',         image: 'Images/Power.png',       rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 base damage (stacks). Effect applied immediately on pickup.' },
   spikyvest:   { id: 'spikyvest',   name: 'Spiky Vest',    image: 'Images/SpikyVest.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 armor and +10 retaliation damage per stack. Attackers take retaliation damage when they hit you (physical only).' },
   spellbook:   { id: 'spellbook',   name: 'Spellbook',     image: 'Images/Spellbook.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 to all passive and ultimate effects per stack — damage, healing, shields, and damage reduction all scale up. Effect applied immediately.' },
@@ -664,6 +664,20 @@ function showWaveLoot(item) {
     picksEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
     return true;
   }
+
+  // ✕ button (top-right): skip the item entirely. Lets players decline loot —
+  // e.g. when nobody can take it (everyone full HP with max potions) or for
+  // no-item challenge runs. Shares the same one-shot guard as every other
+  // button in this picker.
+  const skipBtn = document.getElementById('wave-loot-skip');
+  skipBtn.disabled = false;
+  skipBtn.onclick = () => {
+    if (!markResolved()) return;
+    overlay.style.display = 'none';
+    state.aiActive._lootGranted = true;
+    addLog(`<span class="log-event">✕ Skipped the ${item.name}.</span>`);
+    chooseNextAICard();
+  };
 
   const allPicks   = state.playerPicks;
   const alivePicks = allPicks.filter(f => !f.dead);
@@ -936,8 +950,13 @@ function useConsumable(fighter, item) {
       });
       return;  // picker handles the rest
     }
-    // Only one valid target (or holder is the only option) — apply directly
-    const target = healTargets[0] || fighter;
+    // Only one valid target — apply directly. If nobody needs healing, keep the
+    // potion instead of wasting it (a dead holder must never be "healed" either).
+    if (healTargets.length === 0) {
+      addLog(`<span class="log-event">🧪 Nobody needs healing right now — potion kept.</span>`);
+      return;
+    }
+    const target = healTargets[0];
     const healed = Math.min(potionHeal, target.maxHp - target.hp);
     target.hp = Math.min(target.maxHp, target.hp + potionHeal);
     fighter.items.splice(idx, 1);
@@ -989,6 +1008,13 @@ function useConsumable(fighter, item) {
     fighter.items.splice(idx, 1);
   }
   renderWaveLobbyTeam();
+}
+
+// Damage shown on cards. Marksman's Steady Aim grows a hidden bonus every attack;
+// fold it in so the DMG stat reflects what the next hit will actually deal.
+function displayDamage(fighter) {
+  const dmg = fighter.damage ?? fighter.baseDamage;
+  return fighter.passiveKey === 'steadyaim' ? dmg + (fighter.steadyAimBonus || 0) : dmg;
 }
 
 // Show/hide the item bag tooltip near the given anchor element.
@@ -1199,7 +1225,7 @@ function makeFighter(classDef, passiveIndex) {
     dismountedAttacks: 0,
     dismountBonus: 0,
     horseReviveUsed: false,
-    parryToggle: false,
+    parryToggle: false, parryWait: 0,
     // Necromancer
     necroTurnCount: 0,
     ghoulHp: classDef.id === 'necromancer' ? 10 : 0,
@@ -1257,6 +1283,20 @@ const battleEls = {
   'player-reserves-bar': document.getElementById('player-reserves-bar'),
   'ai-reserves-bar':     document.getElementById('ai-reserves-bar'),
 };
+
+// Portrait phones hide the passive text on the active battle cards, so hovering
+// (or tapping) one shows the same detail panel used elsewhere. Desktop and
+// landscape already show the passive on the card, so they skip this.
+['player', 'ai'].forEach(side => {
+  const el = battleEls[`${side}-fighter`];
+  if (!el) return;
+  el.addEventListener('mouseenter', () => {
+    if (!isPortraitMobile()) return;
+    const f = side === 'player' ? state.playerActive : state.aiActive;
+    if (f) showFighterDetail(f, el);
+  });
+  el.addEventListener('mouseleave', hideCardDetail);
+});
 
 function showScreen(name) {
   Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -1410,7 +1450,7 @@ function showFighterDetail(fighter, cardEl) {
     <div class="cdp-name">${fighter.name}</div>
     <div class="cdp-stats">
       <span class="cdp-hp">❤ ${fighter.hp ?? fighter.baseHp} HP</span>
-      <span class="cdp-dmg ${dt.cls}">${dt.icon} ${fighter.damage ?? fighter.baseDamage} DMG</span>
+      <span class="cdp-dmg ${dt.cls}">${dt.icon} ${displayDamage(fighter)} DMG</span>
     </div>
     <div class="cdp-dmg-type ${dt.cls}">${dt.label}</div>
     <hr class="cdp-divider">
@@ -1430,10 +1470,31 @@ function showFighterDetail(fighter, cardEl) {
   positionDetailPanel(panel, cardEl);
 }
 
+// True on upright phones, where passive text is hidden on the cards and the
+// tooltip is the only place to read it.
+function isPortraitMobile() {
+  return window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches;
+}
+
 function positionDetailPanel(panel, cardEl) {
   const rect   = cardEl.getBoundingClientRect();
   const panelW = 252;
   const gap    = 12;
+
+  if (isPortraitMobile()) {
+    // Narrow upright screen: no room beside the card, so centre the panel
+    // horizontally and put it just below (or above) the card.
+    const actualHp = panel.offsetHeight || 300;
+    let pLeft = rect.left + rect.width / 2 - panelW / 2;
+    pLeft = Math.max(8, Math.min(window.innerWidth - panelW - 8, pLeft));
+    let pTop = rect.bottom + gap;
+    if (pTop + actualHp > window.innerHeight - 8) pTop = rect.top - actualHp - gap;
+    pTop = Math.max(8, pTop);
+    panel.style.left = `${pLeft}px`;
+    panel.style.top  = `${pTop}px`;
+    panel.classList.add('visible');
+    return;
+  }
 
   let left = rect.right + gap;
   if (left + panelW > window.innerWidth - 8) {
@@ -1741,7 +1802,7 @@ function renderFighter(side, fighter) {
       <h3>${fighter.name}</h3>
       <div class="stats">
         <span class="hp">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? `<span class="hp-shield"> +${fighter.shieldHp}🛡</span>` : ''}${horseNote}</span>
-        <span class="dmg">DMG ${fighter.damage}</span>
+        <span class="dmg">DMG ${displayDamage(fighter)}</span>
       </div>
       <div class="hp-bar-wrap">
         <div class="hp-bar" style="width:${hpPct}%;background:${hpColor};"></div>
@@ -1812,7 +1873,7 @@ function buildPassiveDisplay(fighter) {
   }
   if (fighter.passiveKey === 'parry') {
     if (fighter.isMounted) return `🐴 Mounted (Horse: ${fighter.horseHp}/${fighter.horseHpMax} HP)`;
-    return `${fighter.parryToggle ? '🛡 Next attack parried' : '⚔ Next attack hits'} (anger: +${fighter.dismountBonus})`;
+    return `${fighter.parryToggle ? '🛡 Next attack parried' : `⚔ Next attack hits (${fighter.parryWait || 1} more before parry)`} (anger: +${fighter.dismountBonus})`;
   }
   if (fighter.passiveKey === 'sacrifice') {
     return `💀 Ghoul: ${fighter.ghoulHp} HP / ${fighter.ghoulDamage} DMG`;
@@ -1848,7 +1909,7 @@ function showReserveTooltip(event, fighter) {
 
   let html = `
     <div class="rct-name">${fighter.dead ? '💀 ' : ''}${fighter.name}</div>
-    <div class="rct-stats">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? ` +${fighter.shieldHp}🛡` : ''} · DMG ${fighter.damage} · ${armorLabel}</div>
+    <div class="rct-stats">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? ` +${fighter.shieldHp}🛡` : ''} · DMG ${displayDamage(fighter)} · ${armorLabel}</div>
     <div class="rct-passive"><strong>${fighter.passiveName}:</strong> ${passiveText}</div>
   `;
 
@@ -2019,7 +2080,7 @@ function applyBurnTick(side, fighter, callback) {
     if (horseDiedBurn) {
       fighter.isMounted = false;
       fighter.image = 'Images/Mouse.png';
-      if (fighter.passiveKey === 'parry') fighter.parryToggle = true;
+      if (fighter.passiveKey === 'parry') { fighter.parryToggle = true; fighter.parryWait = 0; }
     }
     addLog(`<span class="log-event">🔥 Burn hits the horse! (${fighter.horseHp}/${fighter.horseHpMax} HP)</span>`);
     if (horseDiedBurn) addLog(`<span class="log-event">🐴 The horse was defeated! ${fighter.name} dismounts as a mouse!</span>`);
@@ -2265,15 +2326,19 @@ function doAttack(attackerSide, attacker, defender, callback) {
     addLog(`<span class="log-event">${blockMsg}</span>`);
     dmg = 0;
   } else if (defender.passiveKey === 'parry' && !defender.isMounted && defender.parryToggle) {
-    // Parry: blocks every other attack while dismounted
+    // Parry: blocks the first attack while dismounted, then every third attack
     blocked = true;
     parryBlocked = true;
     defender.parryToggle = false;
+    defender.parryWait   = 2;   // 2 unblocked attacks before the next parry
     addLog(`<span class="log-event">🛡 Parry! ${defender.name} deflects the attack!</span>`);
     dmg = 0;
   } else {
-    // Mark next attack as parry-eligible if applicable
-    if (defender.passiveKey === 'parry' && !defender.isMounted) defender.parryToggle = true;
+    // Parry cadence: after a parry, the next 2 attacks land, then the 3rd is parried
+    if (defender.passiveKey === 'parry' && !defender.isMounted) {
+      if (defender.parryWait > 0) defender.parryWait--;
+      if (defender.parryWait === 0) defender.parryToggle = true;
+    }
     if (dmg > 0) {
       // Berserk: doubles incoming damage before any mitigation
       if (defender.berserk) dmg = Math.round(dmg * 2);
@@ -2435,7 +2500,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
       if (horseDiedRetal) {
         attacker.isMounted = false;
         attacker.image = 'Images/Mouse.png';
-        if (attacker.passiveKey === 'parry') attacker.parryToggle = true;
+        if (attacker.passiveKey === 'parry') { attacker.parryToggle = true; attacker.parryWait = 0; }
       }
       setTimeout(() => {
         const atkElR = document.getElementById(`${attackerSide}-fighter`);
@@ -2477,7 +2542,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
       if (horseDied) {
         attacker.isMounted = false;
         attacker.image     = 'Images/Mouse.png';
-        if (attacker.passiveKey === 'parry') attacker.parryToggle = true;
+        if (attacker.passiveKey === 'parry') { attacker.parryToggle = true; attacker.parryWait = 0; }
       }
       setTimeout(() => {
         showFloatDmg(document.getElementById(`${attackerSide}-fighter`), spikyDmg);
@@ -2885,7 +2950,7 @@ function applyPassiveHeal(fighter) {
 function dismountRider(fighter, side) {
   fighter.isMounted = false;
   fighter.image = 'Images/Mouse.png';
-  if (fighter.passiveKey === 'parry') fighter.parryToggle = true;
+  if (fighter.passiveKey === 'parry') { fighter.parryToggle = true; fighter.parryWait = 0; }
   addLog(`<span class="log-event">🐴 The horse was defeated! ${fighter.name} dismounts as a mouse!</span>`);
   renderFighter(side, fighter);
 }
@@ -2930,7 +2995,7 @@ function spawnGhoul(necro, side) {
     transformed: false, wolfForm: false,
     _magicBonus: 0, attacksReceived: 0, berserk: false,
     isMounted: false, horseHp: 0, horseHpMax: 0,
-    dismountedAttacks: 0, dismountBonus: 0, horseReviveUsed: false, parryToggle: false,
+    dismountedAttacks: 0, dismountBonus: 0, horseReviveUsed: false, parryToggle: false, parryWait: 0,
     necroTurnCount: 0, ghoulHp: 0, ghoulHpMax: 0, ghoulDamage: 0,
     ghoulSpawned: false, rebornUsed: false, reborn: false,
     lightningShieldActive: false, shamHealCount: 0, shamLavaCount: 0,
@@ -3094,7 +3159,7 @@ function triggerLavaBlast(shaman, shamSide, defender, defenderSide) {
     if (defender.horseHp <= 0) {
       defender.isMounted = false;
       defender.image = 'Images/Mouse.png';
-      if (defender.passiveKey === 'parry') defender.parryToggle = true;
+      if (defender.passiveKey === 'parry') { defender.parryToggle = true; defender.parryWait = 0; }
       // Excess damage from killing the horse bleeds into the Rider — stops there (no further reserve chain)
       horseOverkillOnRider = Math.max(0, lavaDmg - prevHorseHp);
       if (horseOverkillOnRider > 0) {
@@ -3525,7 +3590,7 @@ function triggerUltimate(attacker, defender, attackerSide) {
       attacker.transformed = true;
       attacker.ultimateThreshold = 9999;
       attacker.image   = 'Images/Bear.png';
-      attacker.maxHp   = 150 + upgradeHp + spellBear;
+      attacker.maxHp   = 160 + upgradeHp + spellBear;
       attacker.hp      = attacker.maxHp;   // fully healed to new max
       attacker.damage  = 50 + upgradeDmg + spellBear + rallyBonus;
       attacker.armorValue = (attacker.armorValue || 0) + 15; // Bear Form: +15 armor bonus
@@ -3544,8 +3609,8 @@ function triggerUltimate(attacker, defender, attackerSide) {
       attacker.wolfForm    = true;
       attacker.ultimateThreshold = 9999;
       attacker.image  = 'Images/Wolf.png';
-      attacker.maxHp  = attacker.baseHp + upgradeHp + 50 + spellWolf;
-      attacker.hp     = Math.min(attacker.maxHp, attacker.hp + 50 + spellWolf);
+      attacker.maxHp  = attacker.baseHp + upgradeHp + 60 + spellWolf;
+      attacker.hp     = Math.min(attacker.maxHp, attacker.hp + 60 + spellWolf);
       attacker.damage = 60 + upgradeDmg + spellWolf + rallyBonus;
       attacker.passiveName = 'Wolf Form';
       attacker.passive = `Transformed! ${attacker.maxHp} HP / ${attacker.damage} DMG — attacks twice per turn + ${25 + spellWolf} Wolf Bite.`;
@@ -3953,7 +4018,7 @@ function buildCardEl(data, size) {
   card.className = 'card';
 
   const hp  = data.hp  ?? data.baseHp;
-  const dmg = data.damage ?? data.baseDamage;
+  const dmg = displayDamage(data);
   // data.maxHp only exists on an actual fighter instance (not a raw class
   // definition on the selection screen), and it's the same value as `hp`
   // fresh into a fight — showing "current/max" only when maxHp is known
@@ -4379,14 +4444,14 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Death Knight — 150 HP • 40 Damage • Mail Armor (+20) • Mixed Damage</h4>
+      <h4>Death Knight — 140 HP • 40 Damage • Mail Armor (+20) • Mixed Damage</h4>
       <p><strong>Option A — Death Grip:</strong> After every 3 attacks, activates Death Grip. A random benched enemy card is forcibly pulled into the active position (the previous active card moves to the bench), and the Death Knight immediately performs a free attack against it with +20 magical bonus damage (bypasses armor). Combat then continues against the newly pulled card. If no benched targets exist, Death Grip fizzles.</p>
       <p><strong>Option B — Fear of the Dead:</strong> After every 3 attacks, the opponent is overwhelmed with fear and must skip their very next turn completely. If the Death Knight triggers fear again before the skip is used, the previous skip is overwritten (not stacked).</p>
       <p><em>Ultimate (every 2 attacks):</em> Heals exponentially — first trigger heals +10 HP, second +20 HP, third +40 HP, and so on (doubles each time). This healing stacks indefinitely.</p>
 
       <hr>
 
-      <h4>Joker — 100 HP • 30 Damage • Cloth Armor (+0)</h4>
+      <h4>Joker — 110 HP • 30 Damage • Cloth Armor (+0)</h4>
       <p>The Joker is a wildcard. Every single attack the Joker makes goes through a random outcome roll first: <strong>33% miss</strong> (deals 0 damage), <strong>33% normal</strong> (standard damage), or <strong>33% critical hit</strong> (all damage for that attack is doubled). The Joker has no traditional ultimate charge — the RNG is always active.</p>
       <p><strong>Option A — Luck of the Draw:</strong> Every other attack (attacks 1, 3, 5…), flip a coin. Heads gives +20 bonus damage that turn. Tails gives nothing. Crucially, if the RNG rolls a miss but the coin showed heads, the +20 bonus still gets through — a miss only cancels the base damage, not the Luck bonus.</p>
       <p><strong>Option B — The Ace:</strong> Only once, when the Joker first enters battle (whether as a starting fighter or a reserve), flip a coin. Heads grants the Joker +50 HP and +10 damage permanently for the rest of the match. Tails gives nothing. This flip is instant and happens before any combat.</p>
@@ -4396,8 +4461,8 @@ function showModal(section) {
 
       <h4>Druid — 70 HP • 30 Damage (base form) • Leather Armor (+10) • Mixed Damage</h4>
       <p>The Druid starts fragile but transforms after its very first attack into a powerful new form based on the chosen passive. The transformation is permanent and the Druid keeps its current HP (adjusted by the stat bonus) for the rest of the match. The Druid's pre-transform first attack is magical (bypasses armor); all attacks after transformation deal physical damage.</p>
-      <p><strong>Option A — Bear Form:</strong> After the first attack, the Druid transforms into a Bear: maximum HP becomes 150, attack damage becomes 50, and HP is immediately restored to full (150). On transformation the Bear also gains <strong>+15 armor</strong>. The Bear is a durable tank-style fighter. <em>Rogue Mode only:</em> the first time the Bear's HP drops below 33% of maximum in a wave, it instantly heals 30% of its maximum HP — this surge can happen only once per wave.</p>
-      <p><strong>Option B — Wolf Form:</strong> After the first attack, the Druid transforms into a Wolf: maximum HP increases by +50 (to 120), HP also increases by +50, and attack damage becomes 60. The Wolf also attacks twice every turn — the first attack deals full normal damage, while the second hit (Wolf Bite) always deals exactly 25 fixed physical damage (reduced by the defender's armor).</p>
+      <p><strong>Option A — Bear Form:</strong> After the first attack, the Druid transforms into a Bear: maximum HP becomes 160, attack damage becomes 50, and HP is immediately restored to full (160). On transformation the Bear also gains <strong>+15 armor</strong>. The Bear is a durable tank-style fighter. <em>Rogue Mode only:</em> the first time the Bear's HP drops below 33% of maximum in a wave, it instantly heals 30% of its maximum HP — this surge can happen only once per wave.</p>
+      <p><strong>Option B — Wolf Form:</strong> After the first attack, the Druid transforms into a Wolf: maximum HP increases by +60 (to 130), HP also increases by +60, and attack damage becomes 60. The Wolf also attacks twice every turn — the first attack deals full normal damage, while the second hit (Wolf Bite) always deals exactly 25 fixed physical damage (reduced by the defender's armor).</p>
       <p><em>Ultimate (once — first attack):</em> Triggers the transformation. After transforming, the Druid no longer has an ultimate bar.</p>
 
       <hr>
@@ -4405,12 +4470,12 @@ function showModal(section) {
       <h4>Rider — 70 HP • 40 Damage • Mail Armor (+20)</h4>
       <p>The Rider starts every match mounted on a <strong>horse with 80 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+20 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
       <p><strong>Option A — Revival:</strong> After attacking twice while dismounted, the horse automatically revives with 40 HP and the Rider remounts. The anger bonus resets to 0. Revival is one-time only.</p>
-      <p><strong>Option B — Parry:</strong> While dismounted, the Rider blocks every other incoming attack.</p>
+      <p><strong>Option B — Parry:</strong> While dismounted, the Rider blocks the first incoming attack, then every third attack after that (block, hit, hit, block…).</p>
       <p><em>No traditional ultimate bar.</em> The horse system is a permanent mechanic active for the entire match.</p>
 
       <hr>
 
-      <h4>Necromancer — 200 HP • 20 Damage • Cloth Armor (+0) • Magical Attacks</h4>
+      <h4>Necromancer — 200 HP • 25 Damage • Cloth Armor (+0) • Magical Attacks</h4>
       <p>The Necromancer is a high-risk powerhouse. Every turn it takes <strong>20 self-damage</strong>. To compensate, every 3rd turn it unleashes a <strong>Fire Storm</strong> that hits ALL living opponents for 30 magical damage (bypasses armor). Its own base attacks are also magical.</p>
       <p><strong>Option A — Sacrifice:</strong> A Ghoul grows in the background each turn (+30 max HP and +10 damage per turn; starts at 10 HP / 10 DMG). When the Necromancer dies, the Ghoul rises in its place as a physical attacker — effectively giving you a second life.</p>
       <p><strong>Option B — Reborn:</strong> Starting on the Necromancer's 3rd turn, it automatically revives one fallen ally at 50% HP and 50% damage. One-time only. The revived card is shown darkened to indicate its weakened state.</p>
@@ -4439,6 +4504,9 @@ function showModal(section) {
 
       <h4>Starting Bonus</h4>
       <p>Before wave 1 begins you pick a free permanent upgrade for your team — same pool as the mid-run rewards. Use it to set your strategy from the start.</p>
+
+      <h4>Loot &amp; Items</h4>
+      <p>Some enemies drop an item. Give it to a card's bag or use it on the spot — or press the <strong>✕</strong> in the top-right corner of the loot window to skip it (handy when nobody can carry it, or for no-item challenge runs). Cards keep their bag even when defeated: a fallen card can still use a <strong>Revive</strong> from its own bag in the lobby between waves.</p>
 
       <h4>Between Waves</h4>
       <p>After each wave you choose which fighter leads the next one. <strong>Single click</strong> to select, then press <strong>Enter</strong> or click Fight — or <strong>double-click</strong> a card to select and start immediately. Dead fighters cannot be chosen.</p>
@@ -4676,7 +4744,7 @@ function softResetFighter(fighter) {
   fighter.dismountedAttacks       = 0;
   fighter.dismountBonus           = 0;
   fighter.horseReviveUsed         = false;
-  if (fighter.passiveKey === 'parry')       fighter.parryToggle         = false;
+  if (fighter.passiveKey === 'parry')     { fighter.parryToggle = false; fighter.parryWait = 0; }
   if (fighter.passiveKey === 'shieldblock') fighter.shieldBlockAvailable= true;
   // Reset shieldMultiplier so Cleric ultimate (which sets it to 2) doesn't stack
   // across waves — otherwise every 10-wave set doubles the shield output.
