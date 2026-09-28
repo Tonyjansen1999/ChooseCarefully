@@ -522,6 +522,9 @@ const WAVE_UPGRADES = [
 ];
 
 // ── Wave Item Pool ────────────────────────────────────────
+// Max distinct item TYPES a single card's bag can hold (stacks of the same
+// item — e.g. multiple potions — still share one slot; see isItemAtCap).
+const BAG_SLOTS = 9;
 const WAVE_ITEMS = {
   potion:      { id: 'potion',      name: 'Health Potion', image: 'Images/Potion.png',      rarity: 'common',    weight: 35, consumable: true,  unique: false, maxStack: 3, desc: 'Use in the lobby to restore 70 HP to this card. Stacks up to 3.' },
   revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 14, consumable: true,  unique: true,  desc: 'Use in the lobby (even from a fallen card bag): revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
@@ -568,9 +571,9 @@ function equipItem(fighter, item) {
     addLog(`<span class="log-event">🎒 ${fighter.name} already has ${capNote}!</span>`);
     return false;
   }
-  // Guard: 16-slot cap measured by UNIQUE item types (stacks of the same item share one slot)
+  // Guard: BAG_SLOTS cap measured by UNIQUE item types (stacks of the same item share one slot)
   const alreadyHasType = fighter.items.some(i => i.id === item.id);
-  if (!alreadyHasType && new Set(fighter.items.map(i => i.id)).size >= 16) {
+  if (!alreadyHasType && new Set(fighter.items.map(i => i.id)).size >= BAG_SLOTS) {
     addLog(`<span class="log-event">🎒 ${fighter.name}'s bag is full!</span>`);
     return false;
   }
@@ -721,10 +724,10 @@ function showWaveLoot(item) {
   allPicks.forEach(fighter => {
     // For Ghouls, route the item to the underlying Necromancer for capacity checks.
     const bagHolder    = (fighter.passiveKey === 'ghoul' && fighter._necromancer) ? fighter._necromancer : fighter;
-    const typesFull    = usedSlots(bagHolder) >= 16 && !(bagHolder.items || []).some(i => i.id === item.id);
+    const typesFull    = usedSlots(bagHolder) >= BAG_SLOTS && !(bagHolder.items || []).some(i => i.id === item.id);
     const atStackCap   = isItemAtCap(bagHolder, item);
     const blocked      = typesFull || atStackCap;
-    const slotsLeft    = 16 - usedSlots(bagHolder);
+    const slotsLeft    = BAG_SLOTS - usedSlots(bagHolder);
 
     let statusText;
     if (fighter.dead) {
@@ -1042,7 +1045,7 @@ function showItemTooltip(fighter, anchorEl) {
     }
   });
 
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < BAG_SLOTS; i++) {
     const slot = document.createElement('div');
     slot.className = 'ibt-slot';
     const group = grouped[i];

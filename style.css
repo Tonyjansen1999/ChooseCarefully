@@ -1626,7 +1626,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .ibt-slots {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);   /* 3x3 for the 9-slot bag (BAG_SLOTS) */
   gap: 4px;
 }
 .ibt-slot {
