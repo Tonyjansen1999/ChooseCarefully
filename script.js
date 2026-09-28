@@ -1132,6 +1132,86 @@ function attachBagIcon(containerEl, fighter) {
   containerEl.appendChild(img);
 }
 
+// ── Active buffs icon (Rogue Mode only) ─────────────────────
+// Every currently-active numeric bonus on a fighter — from wave items
+// (Spellbook, Shield, Magic Armor, Lifesteal, Spiky Vest, Speed, wave-upgrade
+// damage reduction) and from battle-earned passive growth (Steady Aim,
+// Thunderlord kills, Rider anger, Joker's Ace) — in one place. A new item or
+// passive bonus only needs one line added here to show up in the tooltip;
+// nothing needs its own permanent slot on the card itself.
+function getActiveBuffs(fighter) {
+  const buffs = [];
+  const add = (icon, label, cond, text) => { if (cond) buffs.push(`${icon} ${label}: ${text}`); };
+
+  // Wave items — apply the same way regardless of class
+  add('📖', 'Spellbook', fighter.spellbookBonus > 0, `+${fighter.spellbookBonus} to passives &amp; ultimates`);
+  add('🛡', 'Physical Dmg Reduction', fighter.physicalDmgReduction > 0, `${Math.round(fighter.physicalDmgReduction * 100)}%`);
+  add('🔮', 'Magic Dmg Reduction', fighter.magicDmgReduction > 0, `${fighter.magicDmgReduction} flat`);
+  add('🌟', 'Wave Upgrade Dmg Reduction', fighter.allDmgReductionPct > 0, `${Math.round(fighter.allDmgReductionPct * 100)}%`);
+  add('💉', 'Lifesteal', fighter.lifeStealStacks > 0, `${fighter.lifeStealStacks * 10}%`);
+  add('🦔', 'Spiky Retaliation', fighter.spikyRetaliDmg > 0, `${fighter.spikyRetaliDmg} dmg`);
+  if (fighter.hasSpeed) buffs.push('⚡ Speed: always wins the coin flip');
+
+  // Battle-earned, class-specific bonuses that grow during a fight
+  add('🎯', 'Steady Aim', fighter.passiveKey === 'steadyaim' && fighter.steadyAimBonus > 0, `+${fighter.steadyAimBonus} DMG`);
+  add('⚡', 'Thunderlord kills', fighter.passiveKey === 'thunderlord' && fighter.thunderlordMaxHpBonus > 0, `+${fighter.thunderlordMaxHpBonus} Max HP`);
+  add('😡', 'Dismount Anger', (fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') && !fighter.isMounted && fighter.dismountBonus > 0, `+${fighter.dismountBonus} DMG`);
+  add('🃏', 'The Ace', fighter.passiveKey === 'theace' && fighter.aceHpBonus > 0, `+${fighter.aceHpBonus} Max HP`);
+
+  return buffs;
+}
+
+function showBuffTooltip(fighter, anchorEl) {
+  clearTimeout(_buffTooltipTimeout);
+  const tooltip = document.getElementById('buff-tooltip');
+  const buffs = getActiveBuffs(fighter);
+  tooltip.querySelector('.bft-title').textContent = `${fighter.name}'s Buffs`;
+  const listEl = tooltip.querySelector('.bft-list');
+  listEl.innerHTML = buffs.length
+    ? buffs.map(b => `<div class="bft-row">${b}</div>`).join('')
+    : `<div class="bft-row bft-empty">No active buffs</div>`;
+
+  tooltip.style.display = 'block';
+  requestAnimationFrame(() => {
+    const rect = anchorEl.getBoundingClientRect();
+    const th   = tooltip.offsetHeight;
+    const tw   = tooltip.offsetWidth;
+    let top    = rect.top - th - 8;
+    let left   = rect.left;
+    if (top < 4)                            top  = rect.bottom + 8;
+    if (left + tw > window.innerWidth - 4)  left = window.innerWidth - tw - 8;
+    if (left < 4)                           left = 4;
+    tooltip.style.top  = `${top}px`;
+    tooltip.style.left = `${left}px`;
+  });
+}
+
+let _buffTooltipTimeout = null;
+function hideBuffTooltip() {
+  _buffTooltipTimeout = setTimeout(() => {
+    const t = document.getElementById('buff-tooltip');
+    if (t) t.style.display = 'none';
+  }, 150);
+}
+
+// Attach the buff icon to a DOM element (card or fighter slot), pointing at
+// fighter data. Rogue Mode only, player side only (mirrors attachBagIcon),
+// and only when there's actually something to show — an empty-handed card
+// gets no icon, same as the bag.
+function attachBuffIcon(containerEl, fighter) {
+  if (!state.waveMode) return;
+  const existing = containerEl.querySelector('.card-buff-icon');
+  if (existing) existing.remove();
+  if (getActiveBuffs(fighter).length === 0) return;
+  const icon = document.createElement('div');
+  icon.className = 'card-buff-icon';
+  icon.textContent = '👊';
+  icon.title = 'Active buffs';
+  icon.addEventListener('mouseenter', (e) => { e.stopPropagation(); showBuffTooltip(fighter, icon); });
+  icon.addEventListener('mouseleave', hideBuffTooltip);
+  containerEl.appendChild(icon);
+}
+
 // ── Game State ────────────────────────────────────────────
 let state = {};
 
@@ -1814,6 +1894,7 @@ function renderFighter(side, fighter) {
   if (state.waveMode && side === 'player' && fighter.items && fighter.items.length > 0) {
     attachBagIcon(el, fighter);
   }
+  if (state.waveMode && side === 'player') attachBuffIcon(el, fighter);
   // Wave mode: loot badge on AI's active fighter — placed inside .card-image (bottom-right of image)
   if (state.waveMode && side === 'ai' && fighter.lootItem && !fighter._lootGranted) {
     const cardImg = el.querySelector('.card-image');
@@ -1892,6 +1973,13 @@ function buildPassiveDisplay(fighter) {
     return `${fighter.lightningShieldActive ? '⚡🛡 ' : ''}🌋 Lava in ${lavaIn} attack(s)`;
   }
   if (fighter.passiveKey === 'ghoul') return `💀 Risen`;
+  if (fighter.passiveKey === 'burn') {
+    // Same treatment as Marksman's Steady Aim DMG: show the live number
+    // instead of the static passive text, so the growing potency (from the
+    // ultimate and/or Spellbook) is visible on the card without a hover.
+    const potency = fighter.burnDamage + (fighter.spellbookBonus || 0);
+    return `🔥 Burn: ${potency} dmg/turn`;
+  }
   return fighter.passive;
 }
 
@@ -2004,6 +2092,7 @@ function renderReserves(side) {
     if (state.waveMode && side === 'player' && fighter.items && fighter.items.length > 0) {
       attachBagIcon(card, fighter);
     }
+    if (state.waveMode && side === 'player') attachBuffIcon(card, fighter);
     // Wave mode: loot badge on AI reserve cards — placed inside .card-image (bottom-right of image)
     if (state.waveMode && side === 'ai' && fighter.lootItem && !fighter._lootGranted) {
       const cardImg = card.querySelector('.card-image');
@@ -4805,6 +4894,7 @@ function renderWaveLobbyTeam() {
     if (fighter.items && fighter.items.length > 0) {
       attachBagIcon(card, fighter);
     }
+    attachBuffIcon(card, fighter);
     container.appendChild(card);
   });
 }
