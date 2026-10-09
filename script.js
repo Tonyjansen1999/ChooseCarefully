@@ -132,7 +132,7 @@ const CLASSES = [
       {
         key: 'doubleshot',
         name: 'Double Shot',
-        description: 'After every 2 attacks, deals 40 ⚔ Physical damage to a random living benched opponent.',
+        description: 'Once every other turn, deals 40 ⚔ Physical damage to a random living benched opponent.',
       },
     ],
   },
@@ -171,7 +171,7 @@ const CLASSES = [
       {
         key: 'luckofthedraw',
         name: 'Luck of the Draw',
-        description: 'Every other attack, flip a coin: Heads = +20 bonus damage that turn (even if the attack misses). Tails = no bonus.',
+        description: 'Every other attack, flip a coin: Heads = +40 bonus damage that turn (even if the attack misses). Tails = no bonus.',
       },
       {
         key: 'theace',
@@ -210,7 +210,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +20 ⚔ Physical anger per turn.',
+    ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +10 ⚔ Physical anger per turn.',
     passives: [
       {
         key: 'revival',
@@ -1919,7 +1919,7 @@ function buildPassiveDisplay(fighter) {
     return `💨 ${fighter.evasionAttackCount}/2 attacks`;
   }
   if (fighter.passiveKey === 'doubleshot') {
-    return `🎯 ${fighter.doubleshotCount}/2 attacks`;
+    return `🎯 ${fighter.doubleshotCount}/2 turns`;
   }
   if (fighter.passiveKey === 'thunderlord') {
     if (fighter.thunderlordPendingStrike) return '⚡ Strike pending!';
@@ -2141,6 +2141,12 @@ function runBattleTick() {
 
   const attacker = turn === 'player' ? state.playerActive : state.aiActive;
   const defender = turn === 'player' ? state.aiActive     : state.playerActive;
+
+  // Double Shot: counts real turns, not individual doAttack() calls — the
+  // Marksman's own ultimate fires a bonus extra attack within the same turn,
+  // which would otherwise feed this counter twice and make it proc faster
+  // than the intended "every other turn" cadence.
+  if (attacker.passiveKey === 'doubleshot') attacker.doubleshotCount++;
 
   if (attacker.burnAmount > 0) {
     applyBurnTick(turn, attacker, () => {
@@ -2397,7 +2403,8 @@ function doAttack(attackerSide, attacker, defender, callback) {
 
   attacker.attackCount++;
   if (attacker.passiveKey === 'evasion') attacker.evasionAttackCount++;
-  if (attacker.passiveKey === 'doubleshot') attacker.doubleshotCount++;
+  // doubleshotCount is incremented once per real turn in runBattleTick, not
+  // here — see the comment there.
   if (attacker.passiveKey === 'deathgrip') attacker.deathGripCount++;
   if (attacker.passiveKey === 'fearofthedead') attacker.fearCount++;
 
@@ -2868,9 +2875,9 @@ function isBaseAttackMagical(fighter) {
 function applyPassiveAttack(fighter, dmg) {
   fighter._magicBonus = 0;
 
-  // Rider: anger bonus grows +20 (+ spellbookBonus) per attack while dismounted (physical)
+  // Rider: anger bonus grows +10 (+ spellbookBonus) per attack while dismounted (physical)
   if ((fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') && !fighter.isMounted) {
-    fighter.dismountBonus += 20 + (fighter.spellbookBonus || 0);
+    fighter.dismountBonus += 10 + (fighter.spellbookBonus || 0);
     dmg += fighter.dismountBonus;
     addLog(`<span class="log-event">🐭 Dismount Rage! +${fighter.dismountBonus} anger bonus!</span>`);
   }
@@ -2951,7 +2958,7 @@ function applyPassiveAttack(fighter, dmg) {
       fighter.lotdTurnCount++;
       if (fighter.lotdTurnCount % 2 === 1) {
         if (Math.random() < 0.5) {
-          bonus = 20 + (fighter.spellbookBonus || 0);
+          bonus = 40 + (fighter.spellbookBonus || 0);
           addLog(`<span class="log-event">🎴 Luck of the Draw: HEADS! +${bonus} bonus damage!</span>`);
         } else {
           addLog(`<span class="log-event">🎴 Luck of the Draw: TAILS — no bonus.</span>`);
@@ -4531,7 +4538,7 @@ function showModal(section) {
 
       <h4>Marksman — 90 HP • 40 Damage • Leather Armor (+10)</h4>
       <p><strong>Option A — Steady Aim:</strong> Gains +20 damage permanently after every attack, growing stronger the longer it fights.</p>
-      <p><strong>Option B — Double Shot:</strong> After every 2 attacks, deals 40 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 30 damage persists when that card later enters battle. Double Shot does not count as a normal attack and does not trigger itself.</p>
+      <p><strong>Option B — Double Shot:</strong> Once every other turn, deals 40 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 40 damage persists when that card later enters battle. Double Shot's own turn-count is separate from the Marksman's ultimate — a bonus attack from the ultimate does not advance it.</p>
       <p><em>Ultimate (every 3 attacks):</em> Fires an additional attack immediately.</p>
 
       <hr>
@@ -4545,7 +4552,7 @@ function showModal(section) {
 
       <h4>Joker — 110 HP • 40 Damage • Cloth Armor (+0)</h4>
       <p>The Joker is a wildcard. Every single attack the Joker makes goes through a random outcome roll first: <strong>33% miss</strong> (deals 0 damage), <strong>33% normal</strong> (standard damage), or <strong>33% critical hit</strong> (all damage for that attack is doubled). The Joker has no traditional ultimate charge — the RNG is always active.</p>
-      <p><strong>Option A — Luck of the Draw:</strong> Every other attack (attacks 1, 3, 5…), flip a coin. Heads gives +20 bonus damage that turn. Tails gives nothing. Crucially, if the RNG rolls a miss but the coin showed heads, the +20 bonus still gets through — a miss only cancels the base damage, not the Luck bonus.</p>
+      <p><strong>Option A — Luck of the Draw:</strong> Every other attack (attacks 1, 3, 5…), flip a coin. Heads gives +40 bonus damage that turn. Tails gives nothing. Crucially, if the RNG rolls a miss but the coin showed heads, the +40 bonus still gets through — a miss only cancels the base damage, not the Luck bonus.</p>
       <p><strong>Option B — The Ace:</strong> Only once, when the Joker first enters battle (whether as a starting fighter or a reserve), flip a coin. Heads grants the Joker +50 HP and +10 damage permanently for the rest of the match. Tails gives nothing. This flip is instant and happens before any combat.</p>
       <p><em>No traditional ultimate bar.</em> The RNG system replaces it — every attack is already a gamble.</p>
 
@@ -4560,7 +4567,7 @@ function showModal(section) {
       <hr>
 
       <h4>Rider — 70 HP • 40 Damage • Mail Armor (+20)</h4>
-      <p>The Rider starts every match mounted on a <strong>horse with 60 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+20 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
+      <p>The Rider starts every match mounted on a <strong>horse with 60 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+10 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
       <p><strong>Option A — Revival:</strong> After attacking twice while dismounted, the horse automatically revives with 40 HP and the Rider remounts. The anger bonus resets to 0. Revival is one-time only.</p>
       <p><strong>Option B — Parry:</strong> While dismounted, the Rider blocks the first incoming attack, then every third attack after that (block, hit, hit, block…).</p>
       <p><em>No traditional ultimate bar.</em> The horse system is a permanent mechanic active for the entire match.</p>
