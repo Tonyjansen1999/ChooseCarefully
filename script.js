@@ -9,7 +9,7 @@ const CLASSES = [
     name: 'Protector',
     image: 'Images/protector.png',
     baseHp: 170,
-    baseDamage: 30,
+    baseDamage: 35,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 3,
     ultimateDescription: 'Restores 20 HP to self and grants all living allies +5 damage.',
@@ -17,7 +17,7 @@ const CLASSES = [
       {
         key: 'fortify',
         name: 'Fortify',
-        description: 'Reduces all incoming physical damage by 33%.',
+        description: 'Reduces all incoming physical damage by 25%.',
       },
       {
         key: 'shieldblock',
@@ -53,7 +53,7 @@ const CLASSES = [
     name: 'Cleric',
     image: 'Images/cleric.png',
     baseHp: 110,
-    baseDamage: 20,
+    baseDamage: 25,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 3,
     ultimateDescription: 'Shielding: doubles shield generation (every 3 attacks). Nerfer: heals itself for 20 HP (every 2 attacks).',
@@ -132,7 +132,7 @@ const CLASSES = [
       {
         key: 'doubleshot',
         name: 'Double Shot',
-        description: 'After every 2 attacks, deals 30 ⚔ Physical damage to a random living benched opponent.',
+        description: 'After every 2 attacks, deals 40 ⚔ Physical damage to a random living benched opponent.',
       },
     ],
   },
@@ -163,7 +163,7 @@ const CLASSES = [
     name: 'Joker',
     image: 'Images/Joker.png',
     baseHp: 110,
-    baseDamage: 30,
+    baseDamage: 40,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
     ultimateDescription: 'Always active: every attack is random — 33% miss (0 dmg), 33% normal, 33% critical hit (2× all damage).',
@@ -210,7 +210,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Always mounted on a horse (80 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +20 ⚔ Physical anger per turn.',
+    ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +20 ⚔ Physical anger per turn.',
     passives: [
       {
         key: 'revival',
@@ -1303,8 +1303,8 @@ function makeFighter(classDef, passiveIndex) {
     berserk: false,
     // Rider
     isMounted: classDef.id === 'rider',
-    horseHp: classDef.id === 'rider' ? 80 : 0,
-    horseHpMax: classDef.id === 'rider' ? 80 : 0,
+    horseHp: classDef.id === 'rider' ? 60 : 0,
+    horseHpMax: classDef.id === 'rider' ? 60 : 0,
     dismountedAttacks: 0,
     dismountBonus: 0,
     horseReviveUsed: false,
@@ -2997,11 +2997,11 @@ function applyPassiveDefend(defender, dmg, trueDmgPart = 0) {
 
   let reducedPhys = physDmg;
   if (defender.passiveKey === 'fortify') {
-    // Fortify: 33% base; each Spellbook compounds it by ×1.10 (multiplicative, not additive):
-    //   0 books → 33%,  1 → 36.3%,  2 → 39.9%,  3 → 43.9%
+    // Fortify: 25% base; each Spellbook compounds it by ×1.10 (multiplicative, not additive):
+    //   0 books → 25%,  1 → 27.5%,  2 → 30.25%,  3 → 33.3%
     // Shield item stacks remain additive on top of the compounded base.
     const spellbookCount = Math.round((defender.spellbookBonus || 0) / 10);
-    const baseReduction  = 0.33 * Math.pow(1.10, spellbookCount);
+    const baseReduction  = 0.25 * Math.pow(1.10, spellbookCount);
     const totalReduction = baseReduction + itemReduction;
     reducedPhys = Math.round(physDmg * (1 - totalReduction));
   } else if (itemReduction > 0) {
@@ -3418,7 +3418,7 @@ function triggerDoubleShot(attackerSide, attacker, currentDefender) {
   animateProjectile('ArrowAni.png', atkEl, targetCard || atkEl, { rotate: true });
 
   setTimeout(() => {
-    let dsBase = (attacker.berserk ? 60 : 30) + (attacker.spellbookBonus || 0);
+    let dsBase = (attacker.berserk ? 80 : 40) + (attacker.spellbookBonus || 0);
     if (target.berserk) dsBase = Math.round(dsBase * 2);
     const dsArmor   = target.armorValue || 0;
     const dsAbsorb  = Math.min(dsArmor, dsBase);
@@ -4494,8 +4494,8 @@ function showModal(section) {
       <h3>Classes &amp; Passives</h3>
       <p>Every class has <strong>two passive options</strong>. Only the selected one is active.</p>
 
-      <h4>Protector — 170 HP • 30 Damage • Mail Armor (+20)</h4>
-      <p><strong>Option A — Fortify:</strong> Reduces all incoming damage by 33%.</p>
+      <h4>Protector — 170 HP • 35 Damage • Mail Armor (+20)</h4>
+      <p><strong>Option A — Fortify:</strong> Reduces all incoming damage by 25%.</p>
       <p><strong>Option B — Shield Block:</strong> Blocks all direct damage from the opponent's very first attack. Activates once per Protector life. After that first hit the shield is permanently consumed — it does not reactivate when fighting a new opponent. Secondary effects (burn, etc.) still apply normally.</p>
       <p><em>Ultimate (every 3 attacks):</em> Restores 20 HP to self. All living allies permanently gain +5 damage.</p>
 
@@ -4508,7 +4508,7 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Cleric — 110 HP • 20 Damage • Cloth Armor (+0) • Magical Attacks</h4>
+      <h4>Cleric — 110 HP • 25 Damage • Cloth Armor (+0) • Magical Attacks</h4>
       <p><strong>Option A — Shielding:</strong> Each turn survived grants +20 HP shield to both benched allies. Shields persist between waves.</p>
       <p><strong>Option B — Nerfer:</strong> At the end of each turn the Cleric survives, randomly selects 1 living <em>benched</em> opponent card and permanently reduces its damage by 10. Never targets the active opponent. Never targets dead cards. If no benched targets exist, nothing happens. Minimum damage floor: 10. The same card can be targeted multiple times, and reductions stack.</p>
       <p><em>Ultimate:</em> Shielding (every 3 attacks) — doubles shield generation for the rest of its life. Nerfer (every 2 attacks) — heals itself for 20 HP.</p>
@@ -4531,7 +4531,7 @@ function showModal(section) {
 
       <h4>Marksman — 90 HP • 40 Damage • Leather Armor (+10)</h4>
       <p><strong>Option A — Steady Aim:</strong> Gains +20 damage permanently after every attack, growing stronger the longer it fights.</p>
-      <p><strong>Option B — Double Shot:</strong> After every 2 attacks, deals 30 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 30 damage persists when that card later enters battle. Double Shot does not count as a normal attack and does not trigger itself.</p>
+      <p><strong>Option B — Double Shot:</strong> After every 2 attacks, deals 40 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 30 damage persists when that card later enters battle. Double Shot does not count as a normal attack and does not trigger itself.</p>
       <p><em>Ultimate (every 3 attacks):</em> Fires an additional attack immediately.</p>
 
       <hr>
@@ -4543,7 +4543,7 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Joker — 110 HP • 30 Damage • Cloth Armor (+0)</h4>
+      <h4>Joker — 110 HP • 40 Damage • Cloth Armor (+0)</h4>
       <p>The Joker is a wildcard. Every single attack the Joker makes goes through a random outcome roll first: <strong>33% miss</strong> (deals 0 damage), <strong>33% normal</strong> (standard damage), or <strong>33% critical hit</strong> (all damage for that attack is doubled). The Joker has no traditional ultimate charge — the RNG is always active.</p>
       <p><strong>Option A — Luck of the Draw:</strong> Every other attack (attacks 1, 3, 5…), flip a coin. Heads gives +20 bonus damage that turn. Tails gives nothing. Crucially, if the RNG rolls a miss but the coin showed heads, the +20 bonus still gets through — a miss only cancels the base damage, not the Luck bonus.</p>
       <p><strong>Option B — The Ace:</strong> Only once, when the Joker first enters battle (whether as a starting fighter or a reserve), flip a coin. Heads grants the Joker +50 HP and +10 damage permanently for the rest of the match. Tails gives nothing. This flip is instant and happens before any combat.</p>
@@ -4560,7 +4560,7 @@ function showModal(section) {
       <hr>
 
       <h4>Rider — 70 HP • 40 Damage • Mail Armor (+20)</h4>
-      <p>The Rider starts every match mounted on a <strong>horse with 80 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+20 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
+      <p>The Rider starts every match mounted on a <strong>horse with 60 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+20 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
       <p><strong>Option A — Revival:</strong> After attacking twice while dismounted, the horse automatically revives with 40 HP and the Rider remounts. The anger bonus resets to 0. Revival is one-time only.</p>
       <p><strong>Option B — Parry:</strong> While dismounted, the Rider blocks the first incoming attack, then every third attack after that (block, hit, hit, block…).</p>
       <p><em>No traditional ultimate bar.</em> The horse system is a permanent mechanic active for the entire match.</p>
@@ -5024,7 +5024,7 @@ function hardResetFighter(fighter) {
   // Rider: fully remount with a fresh horse at 10-wave boundary
   if (fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') {
     fighter.isMounted         = true;
-    fighter.horseHp           = fighter.horseHpMax; // restore to full (80 HP)
+    fighter.horseHp           = fighter.horseHpMax; // restore to full (60 HP)
     fighter.image             = 'Images/Rider.png';
     fighter.dismountBonus     = 0;
     fighter.horseReviveUsed   = false;
