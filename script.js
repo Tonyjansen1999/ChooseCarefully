@@ -118,7 +118,7 @@ const CLASSES = [
     id: 'marksman',
     name: 'Marksman',
     image: 'Images/marksman.png',
-    baseHp: 90,
+    baseHp: 100,
     baseDamage: 40,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 3,
@@ -4536,7 +4536,7 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Marksman — 90 HP • 40 Damage • Leather Armor (+10)</h4>
+      <h4>Marksman — 100 HP • 40 Damage • Leather Armor (+10)</h4>
       <p><strong>Option A — Steady Aim:</strong> Gains +20 damage permanently after every attack, growing stronger the longer it fights.</p>
       <p><strong>Option B — Double Shot:</strong> Once every other turn, deals 40 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 40 damage persists when that card later enters battle. Double Shot's own turn-count is separate from the Marksman's ultimate — a bonus attack from the ultimate does not advance it.</p>
       <p><em>Ultimate (every 3 attacks):</em> Fires an additional attack immediately.</p>
