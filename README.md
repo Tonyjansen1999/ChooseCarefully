@@ -24,9 +24,9 @@ then visit the printed local URL.
 
 ## Features
 
-- **12 playable classes**, each with two selectable passives and a unique
-  ultimate ability: Tank, Bruiser, Support, Mage, Assassin, Marksman, Death
-  Knight, Joker, Druid, Rider, Necromancer, Shaman.
+- **14 playable classes**, each with two selectable passives and a unique
+  ultimate ability: Protector, Barbarian, Cleric, Mage, Assassin, Marksman,
+  Death Knight, Joker, Druid, Rider, Necromancer, Shaman, Paladin, Pirate.
 - **Classic mode** — pick 3 cards, reveal both teams, and battle a single AI
   opponent to the death.
 - **Rogue Mode** — pick your team once and survive 50 waves of escalating AI

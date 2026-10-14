@@ -268,6 +268,50 @@ const CLASSES = [
       },
     ],
   },
+  {
+    id: 'paladin',
+    name: 'Paladin',
+    image: 'Images/Paladin.png',
+    baseHp: 130,
+    baseDamage: 30,
+    armorType: 'mail', armorValue: 20,
+    ultimateThreshold: 9999,
+    ultimateDescription: 'Crusader Aura (always active): half of every hit the Paladin lands is ✨ Magical (bypasses armor) — the other half stays ⚔ Physical.',
+    passives: [
+      {
+        key: 'auraofprotection',
+        name: 'Aura of Protection',
+        description: 'Always active while the Paladin is alive, even benched: every living ally (Paladin included) gains +10 armor.',
+      },
+      {
+        key: 'judgement',
+        name: 'Judgement',
+        description: 'Every other attack is replaced by Judgement: base attack damage +20, dealt entirely as true damage (bypasses all armor and defense), and heals the Paladin for 20 HP.',
+      },
+    ],
+  },
+  {
+    id: 'pirate',
+    name: 'Pirate',
+    image: 'Images/Pirate.png',
+    baseHp: 100,
+    baseDamage: 40,
+    armorType: 'leather', armorValue: 10,
+    ultimateThreshold: 9999,
+    ultimateDescription: 'The Barrel (always active): the first time the Pirate drops to 50% HP or below against a given opponent, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can trigger again against each new opponent faced.',
+    passives: [
+      {
+        key: 'barrage',
+        name: 'Barrage',
+        description: 'Every other attack, fires an extra Barrage: 30 ⚔ Physical damage to the active opponent and every living benched opponent.',
+      },
+      {
+        key: 'blademaster',
+        name: 'Blademaster',
+        description: 'Every landed hit inflicts Bleed: 10 true damage per turn and −50% healing effectiveness. Persists while benched; only clears on death or at the next 10-wave section.',
+      },
+    ],
+  },
 ];
 
 // ── Wave Mode — Enemy Compositions (50 waves) ─────────────
@@ -1160,6 +1204,10 @@ function getActiveBuffs(fighter) {
   add('⚡', 'Thunderlord kills', fighter.passiveKey === 'thunderlord' && fighter.thunderlordMaxHpBonus > 0, `+${fighter.thunderlordMaxHpBonus} Max HP`);
   add('😡', 'Dismount Anger', (fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') && !fighter.isMounted && fighter.dismountBonus > 0, `+${fighter.dismountBonus} DMG`);
   add('🃏', 'The Ace', fighter.passiveKey === 'theace' && fighter.aceHpBonus > 0, `+${fighter.aceHpBonus} Max HP`);
+  // Aura of Protection benefits the whole team, including cards that aren't
+  // the Paladin themselves — getEffectiveArmor already encodes exactly when
+  // that applies, so reuse it here instead of re-deriving the same check.
+  add('🛡️', 'Aura of Protection', getEffectiveArmor(fighter) > (fighter.armorValue || 0), `+10 armor (from Paladin)`);
 
   return buffs;
 }
@@ -1272,6 +1320,13 @@ function makeFighter(classDef, passiveIndex) {
     steadyAimBonus: 0,
     // Double Shot
     doubleshotCount: 0,
+    // Paladin
+    judgementCount: 0,       // counts the Paladin's own attacks; Judgement fires on even counts
+    _judgementStrike: false, // true only during a Judgement-replaced attack (true damage)
+    // Pirate
+    barrageCount: 0,           // counts the Pirate's own attacks; Barrage fires on even counts
+    bleedDotAmount: 0,         // Blademaster bleed DOT (true damage); persists like poison
+    barrelProcdAgainst: [],    // opponent objects The Barrel has already triggered against
     // Thunderlord
     thunderlordPendingStrike: false,
     thunderlordMaxHpBonus: 0,   // total maxHp gained from kills; stripped on 10-wave reset
@@ -1983,6 +2038,16 @@ function buildPassiveDisplay(fighter) {
     const potency = fighter.burnDamage + (fighter.spellbookBonus || 0);
     return `🔥 Burn: ${potency} dmg/turn`;
   }
+  if (fighter.passiveKey === 'auraofprotection') {
+    return `🛡️ Aura active (+10 armor, team)`;
+  }
+  if (fighter.passiveKey === 'judgement') {
+    return (fighter.judgementCount || 0) % 2 === 0 ? '✝️ Judgement ready' : '✝️ Judgement in 1 attack';
+  }
+  if (fighter.passiveKey === 'barrage') {
+    const barrageIn = 2 - ((fighter.barrageCount || 0) % 2);
+    return `🔫 Barrage in ${barrageIn} attack(s)`;
+  }
   return fighter.passive;
 }
 
@@ -2148,24 +2213,13 @@ function runBattleTick() {
   // than the intended "every other turn" cadence.
   if (attacker.passiveKey === 'doubleshot') attacker.doubleshotCount++;
 
-  if (attacker.burnAmount > 0) {
-    applyBurnTick(turn, attacker, () => {
-      if (attacker.hp <= 0) return;
-      if (attacker.poisonDotAmount > 0) {
-        applyPoisonTick(turn, attacker, () => {
-          if (attacker.hp > 0) executeAttack(turn, attacker, defender);
-        });
-      } else {
-        executeAttack(turn, attacker, defender);
-      }
-    });
-  } else if (attacker.poisonDotAmount > 0) {
-    applyPoisonTick(turn, attacker, () => {
-      if (attacker.hp > 0) executeAttack(turn, attacker, defender);
-    });
-  } else {
-    executeAttack(turn, attacker, defender);
-  }
+  runDotTicks(turn, attacker, [
+    { amount: attacker.burnAmount,      fn: applyBurnTick },
+    { amount: attacker.poisonDotAmount, fn: applyPoisonTick },
+    { amount: attacker.bleedDotAmount,  fn: applyBleedTick },
+  ], (anyTickRan) => {
+    if (!anyTickRan || attacker.hp > 0) executeAttack(turn, attacker, defender);
+  });
 }
 
 function applyBurnTick(side, fighter, callback) {
@@ -2302,6 +2356,92 @@ function applyPoisonTick(side, fighter, callback) {
   setTimeout(callback, 400);
 }
 
+// ── BLEED DOT (Pirate Blademaster) ───────────────────────
+// Same shape as applyPoisonTick above — true damage instead of magical,
+// tracked in its own field (bleedDotAmount) so poison and bleed can both be
+// active on the same fighter independently.
+function applyBleedTick(side, fighter, callback) {
+  const bleedDmg = fighter.bleedDotAmount;
+
+  const shieldAbs = Math.min(fighter.shieldHp || 0, bleedDmg);
+  fighter.shieldHp = (fighter.shieldHp || 0) - shieldAbs;
+  fighter.hp = Math.max(0, fighter.hp - (bleedDmg - shieldAbs));
+
+  const shieldNote = shieldAbs > 0 ? ` (🛡 ${shieldAbs} absorbed)` : '';
+  addLog(`<span class="log-event">🩸 ${fighter.name} suffers bleeding — ${bleedDmg} damage!${shieldNote} (${fighter.hp} HP)</span>`);
+  showFloatDmg(document.getElementById(`${side}-fighter`), bleedDmg);
+  renderFighter(side, fighter);
+
+  if (fighter.hp <= 0) {
+    // Death's Door: already protected — keep at 1 HP
+    if (fighter.deathsDoorActive) {
+      fighter.hp = 1;
+      renderFighter(side, fighter);
+      setTimeout(callback, 400);
+      return;
+    }
+
+    // Death's Door: chance to survive at 1 HP (wave mode, AI only, wave > 10)
+    if (side === 'ai' && state.waveMode && state.currentWave > 10) {
+      const ddChance = Math.min(0.10, Math.floor((state.currentWave - 1) / 10) * 0.025);
+      if (Math.random() < ddChance) {
+        fighter.hp = 1;
+        fighter.deathsDoorActive = true;
+        addLog(`<span class="log-event">☠ Death's Door! ${fighter.name} clings to life at 1 HP!</span>`);
+        renderFighter(side, fighter);
+        setTimeout(callback, 400);
+        return;
+      }
+    }
+
+    markFighterDead(fighter);
+    logEvent(`💀 ${fighter.name} bled out!`);
+    animateDeath(side, () => {
+      if (side === 'player') {
+        const next = chooseNextPlayerCard();
+        if (!next) endGame(false);
+      } else {
+        chooseNextAICard();
+      }
+    });
+    return;
+  }
+
+  setTimeout(callback, 400);
+}
+
+// Runs any active DOT ticks (burn, poison, bleed) on `fighter` in sequence,
+// then calls `callback(anyTickRan)`. Each tick can kill the fighter, in which
+// case the chain stops short of the remaining ticks and of `callback` —
+// mirrors the old hand-nested burn-then-poison structure, generalized to N
+// DOT types so adding another one later doesn't mean nesting another level
+// of callbacks.
+//
+// `anyTickRan` matters to the caller: the original code only re-checked
+// `hp > 0` before attacking when a DOT tick had actually just run (to stop a
+// fighter who died from that tick) — when NO DOT was active at all it called
+// executeAttack() unconditionally, trusting that a fighter reaching their own
+// turn must already be alive. Some damage (e.g. Pirate Barrage's bonus AOE,
+// Necromancer Fire Storm, Shaman Lava Blast) lands asynchronously outside the
+// normal attack->checkDeaths pipeline and can violate that trust; always
+// gating on hp > 0 here would then silently drop the turn forever (nothing
+// left to call checkDeaths() again). Only gating when a tick ran preserves
+// the original self-correcting behavior: a stray async kill between turns
+// still gets caught the moment this fighter's own turn executeAttack()s and
+// checkDeaths() runs again.
+function runDotTicks(side, fighter, ticks, callback) {
+  const [first, ...rest] = ticks;
+  if (!first) { callback(false); return; }
+  if ((first.amount || 0) > 0) {
+    first.fn(side, fighter, () => {
+      if (fighter.hp <= 0) return; // died from this tick — chain stops here
+      runDotTicks(side, fighter, rest, () => callback(true));
+    });
+  } else {
+    runDotTicks(side, fighter, rest, callback);
+  }
+}
+
 function executeAttack(turn, attacker, defender) {
   doAttack(turn, attacker, defender, () => {
     // Dragon Inferno — every 3rd attack hits ALL opponents with a fireball.
@@ -2391,6 +2531,20 @@ function executeAttack(turn, attacker, defender) {
   });
 }
 
+// Paladin's Aura of Protection: +10 armor to every living ally — the Paladin
+// itself included, and even while benched — for as long as that Paladin is
+// alive. Computed on the fly rather than stored on each ally, so it turns on
+// and off correctly as the Paladin lives/dies without needing to touch
+// every teammate's own armorValue.
+function getEffectiveArmor(fighter) {
+  const base  = fighter.armorValue || 0;
+  const picks = (state.playerPicks && state.playerPicks.includes(fighter)) ? state.playerPicks
+              : (state.aiPicks && state.aiPicks.includes(fighter))         ? state.aiPicks
+              : null;
+  const hasAura = picks && picks.some(f => !f.dead && f.passiveKey === 'auraofprotection');
+  return hasAura ? base + 10 : base;
+}
+
 // ── ATTACK ────────────────────────────────────────────────
 function doAttack(attackerSide, attacker, defender, callback) {
   const defenderSide = attackerSide === 'player' ? 'ai' : 'player';
@@ -2444,7 +2598,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
       // Lightning Shield: reduces all incoming damage by 10
       if (defender.lightningShieldActive) dmg = Math.max(0, dmg - 10);
       // Armor reduces physical portion only
-      const armorVal = defender.armorValue || 0;
+      const armorVal = getEffectiveArmor(defender);
       let trueDmgPart = 0;
       if (attacker.passiveKey === 'truedamage') {
         // Champion True Damage: half bypasses all armor and passive defense
@@ -2456,6 +2610,22 @@ function doAttack(attackerSide, attacker, defender, callback) {
           if (absorbed > 0) addLog(`<span class="log-event">🛡 ${defender.name}'s armor absorbs ${absorbed} physical damage! (True damage bypasses)</span>`);
         }
         dmg = physPart + trueDmgPart;
+      } else if (attacker._judgementStrike) {
+        // Paladin Judgement: the ENTIRE hit is true damage — bypasses armor,
+        // Fortify/Shield-item reduction, and the wave-upgrade all-damage
+        // reduction (all handled downstream via trueDmgPart).
+        trueDmgPart = dmg;
+      } else if (attacker.id === 'paladin') {
+        // Crusader Aura (innate, every non-Judgement attack): half the damage
+        // is magical and bypasses armor; the other half is reduced normally.
+        const magicPart = Math.floor(dmg / 2);
+        let physPart    = dmg - magicPart;
+        if (armorVal > 0) {
+          const absorbed = Math.min(armorVal, physPart);
+          physPart = Math.max(0, physPart - absorbed);
+          if (absorbed > 0) addLog(`<span class="log-event">🛡 ${defender.name}'s armor absorbs ${absorbed} physical damage! (Crusader Aura: the rest is magical)</span>`);
+        }
+        dmg = physPart + magicPart;
       } else if (armorVal > 0 && !isBaseAttackMagical(attacker)) {
         const magicPart = Math.min(attacker._magicBonus || 0, dmg);
         const physPart  = dmg - magicPart;
@@ -2535,6 +2705,32 @@ function doAttack(attackerSide, attacker, defender, callback) {
     if (!alreadyPoisoned) {
       addLog(`<span class="log-event">☠️ Poison Dart! ${defender.name} is poisoned! (10 dmg/turn, -50% healing)</span>`);
     }
+  }
+
+  // Pirate Blademaster Bleed: applied on every hit that lands (true DOT +
+  // healing reduction) — same shape as Dart-Peon's Poison above, just true
+  // damage instead of magical and tracked in its own field so a fighter can
+  // carry both independently.
+  if (!blocked && !horseBlocked && dmg > 0 && attacker.passiveKey === 'blademaster') {
+    const alreadyBleeding = defender.bleedDotAmount > 0;
+    defender.bleedDotAmount = 10 + (attacker.spellbookBonus || 0);
+    if (!alreadyBleeding) {
+      defender.healingReductionPct = Math.min(1, (defender.healingReductionPct || 0) + 0.50);
+      addLog(`<span class="log-event">🩸 Bleed! ${defender.name} is bleeding! (${defender.bleedDotAmount} dmg/turn, -50% healing)</span>`);
+    }
+  }
+
+  // Pirate's The Barrel: the first time the Pirate (as defender here) drops
+  // to 50% max HP or below against THIS specific opponent, drink a barrel of
+  // rum. Tracked by opponent object reference, not id, so a fresh enemy of
+  // the same class in a later wave can trigger it again.
+  if (!blocked && !horseBlocked && dmg > 0 &&
+      (defender.passiveKey === 'barrage' || defender.passiveKey === 'blademaster') &&
+      defender.hp > 0 && defender.hp <= Math.floor(defender.maxHp * 0.5) &&
+      !(defender.barrelProcdAgainst || []).includes(attacker)) {
+    defender.barrelProcdAgainst = defender.barrelProcdAgainst || [];
+    defender.barrelProcdAgainst.push(attacker);
+    triggerTheBarrel(defender, defenderSide);
   }
 
   // Bear Form low-HP surge: heals 30% of max HP once when dropping below 33% HP.
@@ -2738,6 +2934,7 @@ function doAttack(attackerSide, attacker, defender, callback) {
   }
   if (attacker.passiveKey === 'chainheal') attacker.shamHealCount++;
   if (attacker.passiveKey === 'lavablast') attacker.shamLavaCount++;
+  if (attacker.passiveKey === 'barrage')   attacker.barrageCount++;
   if (attacker.passiveKey === 'revival' && !attacker.isMounted && !attacker.horseReviveUsed) {
     attacker.dismountedAttacks++;
   }
@@ -2844,6 +3041,9 @@ function doAttack(attackerSide, attacker, defender, callback) {
     if (attacker.passiveKey === 'lavablast' && attacker.shamLavaCount > 0 && attacker.shamLavaCount % 3 === 0) {
       setTimeout(() => triggerLavaBlast(attacker, attackerSide, defender, defenderSide), 200);
     }
+    if (attacker.passiveKey === 'barrage' && attacker.barrageCount > 0 && attacker.barrageCount % 2 === 0) {
+      setTimeout(() => triggerBarrage(attacker, attackerSide), 200);
+    }
     if (attacker.passiveKey === 'revival' && !attacker.isMounted && !attacker.horseReviveUsed && attacker.dismountedAttacks >= 2) {
       setTimeout(() => remountRider(attacker, attackerSide), 200);
     }
@@ -2873,7 +3073,21 @@ function isBaseAttackMagical(fighter) {
 }
 
 function applyPassiveAttack(fighter, dmg) {
-  fighter._magicBonus = 0;
+  fighter._magicBonus     = 0;
+  fighter._judgementStrike = false;
+
+  // Paladin Judgement: every other attack is replaced outright — base attack
+  // damage +20, entirely as true damage (the doAttack armor branch reads
+  // _judgementStrike to bypass everything), plus a self-heal in applyPassiveHeal.
+  if (fighter.passiveKey === 'judgement') {
+    fighter.judgementCount = (fighter.judgementCount || 0) + 1;
+    if (fighter.judgementCount % 2 === 0) {
+      fighter._judgementStrike = true;
+      const jBonus = 20 + (fighter.spellbookBonus || 0);
+      addLog(`<span class="log-event">✝️ Judgement! ${fighter.name} calls down holy retribution!</span>`);
+      return dmg + jBonus;
+    }
+  }
 
   // Rider: anger bonus grows +10 (+ spellbookBonus) per attack while dismounted (physical)
   if ((fighter.passiveKey === 'revival' || fighter.passiveKey === 'parry') && !fighter.isMounted) {
@@ -3041,6 +3255,12 @@ function applyPassiveHeal(fighter) {
     fighter.hp = Math.min(fighter.maxHp, fighter.hp + rageHeal);
     const debuffNote = healReduction > 0 ? ' (healing reduced)' : '';
     addLog(`<span class="log-event">⚡ Barbarian Ultimate! +${rageHeal} HP healed!${debuffNote}</span>`);
+  } else if (fighter.passiveKey === 'judgement' && fighter._judgementStrike) {
+    const jHealRaw = 20 + (fighter.spellbookBonus || 0);
+    const jHeal = healReduction > 0 ? Math.floor(jHealRaw * (1 - healReduction)) : jHealRaw;
+    fighter.hp = Math.min(fighter.maxHp, fighter.hp + jHeal);
+    const debuffNote = healReduction > 0 ? ' (healing reduced)' : '';
+    addLog(`<span class="log-event">✨ Judgement heals ${fighter.name} for ${jHeal} HP${debuffNote}</span>`);
   }
 }
 
@@ -3203,6 +3423,85 @@ function triggerFireStorm(necro, necroSide) {
     renderFighter(oppSide, oppActive);
     renderReserves('player');
     renderReserves('ai');
+  }, 350);
+}
+
+// ── PALADIN / PIRATE MECHANICS ────────────────────────────
+
+// Pirate Barrage: a bonus AOE fired every other attack, on top of (not
+// instead of) the Pirate's normal hit — same shape as triggerFireStorm
+// above, but physical (armor-reduced per target, via getEffectiveArmor so
+// an opposing Paladin's Aura of Protection is respected) instead of magical.
+function triggerBarrage(pirate, pirateSide) {
+  const oppSide   = pirateSide === 'player' ? 'ai' : 'player';
+  const oppPicks  = pirateSide === 'player' ? state.aiPicks : state.playerPicks;
+  const oppActive = pirateSide === 'player' ? state.aiActive : state.playerActive;
+  const pirateEl  = document.getElementById(`${pirateSide}-fighter`);
+  const activeEl  = document.getElementById(`${oppSide}-fighter`);
+  const baseDmg   = 30 + (pirate.spellbookBonus || 0);
+
+  playSound('sound-gun');
+  animateProjectile('gun.png', pirateEl, activeEl, { flip: pirateSide === 'ai' });
+
+  setTimeout(() => {
+    // Hit active opponent (let checkDeaths handle death, don't set dead here)
+    if (oppActive && !oppActive.dead && oppActive.hp > 0) {
+      const armorVal = getEffectiveArmor(oppActive);
+      const absorbed = Math.min(armorVal, baseDmg);
+      const dmgDealt = Math.max(1, baseDmg - absorbed) * (oppActive.berserk ? 2 : 1);
+      oppActive.hp = Math.max(0, oppActive.hp - dmgDealt);
+      addLog(`<span class="log-event">🔫 Barrage! ${oppActive.name} hit for ${dmgDealt} <span class="log-phys">⚔ Physical</span>! (${oppActive.hp} HP)</span>`);
+    }
+
+    // Second wave — same sound again, projectile toward each living reserve.
+    playSound('sound-gun');
+    oppPicks.forEach(f => {
+      if (f.dead || f === oppActive || f.hp <= 0) return;
+      const armorVal = getEffectiveArmor(f);
+      const absorbed = Math.min(armorVal, baseDmg);
+      const dmgDealt = Math.max(1, baseDmg - absorbed) * (f.berserk ? 2 : 1);
+      const reserveEl = document.querySelector(`#${oppSide}-reserves [data-fighter-id="${f.id}"]`);
+      if (reserveEl) animateProjectile('gun.png', pirateEl, reserveEl, { flip: pirateSide === 'ai' });
+      f.hp = Math.max(0, f.hp - dmgDealt);
+      if (f.hp <= 0) f.dead = true;
+      addLog(`<span class="log-event">🔫 Barrage! ${f.name} hit for ${dmgDealt} <span class="log-phys">⚔ Physical</span>! (${f.hp} HP)</span>`);
+    });
+
+    renderFighter(oppSide, oppActive);
+    renderReserves('player');
+    renderReserves('ai');
+  }, 350);
+}
+
+// Pirate's The Barrel: heals the Pirate and permanently buffs the whole
+// living team. Triggered once per distinct opponent from doAttack (see the
+// barrelProcdAgainst check there). Stat changes apply immediately (so any
+// snapshot taken right after for the main attack's own log line already
+// reflects them); the log line/animation are deferred slightly so they
+// appear after that attack-result line, not before it.
+function triggerTheBarrel(pirate, side) {
+  const picks = side === 'player' ? state.playerPicks : state.aiPicks;
+  const healReduct = pirate.healingReductionPct || 0;
+  const selfHealRaw = 20 + (pirate.spellbookBonus || 0);
+  const selfHeal = healReduct > 0 ? Math.floor(selfHealRaw * (1 - healReduct)) : selfHealRaw;
+  pirate.hp = Math.min(pirate.maxHp, pirate.hp + selfHeal);
+
+  const hpBonus  = 20 + (pirate.spellbookBonus || 0);
+  const dmgBonus = 10 + (pirate.spellbookBonus || 0);
+  picks.forEach(f => {
+    if (f.dead) return;
+    f.maxHp      += hpBonus;
+    f.hp          = Math.min(f.maxHp, f.hp + hpBonus);
+    f.baseDamage += dmgBonus;
+    f.damage     += dmgBonus;
+  });
+
+  setTimeout(() => {
+    playSound('sound-heal');
+    animateProjectile('HealAni.png', null, document.getElementById(`${side}-fighter`), { isImpact: true });
+    addLog(`<span class="log-event">🍺 The Barrel! ${pirate.name} drinks a barrel of rum — heals ${selfHeal} HP, and the whole team gains +${hpBonus} Max HP and +${dmgBonus} damage!</span>`);
+    renderFighter(side, pirate);
+    renderReserves(side);
   }, 350);
 }
 
@@ -3427,7 +3726,7 @@ function triggerDoubleShot(attackerSide, attacker, currentDefender) {
   setTimeout(() => {
     let dsBase = (attacker.berserk ? 80 : 40) + (attacker.spellbookBonus || 0);
     if (target.berserk) dsBase = Math.round(dsBase * 2);
-    const dsArmor   = target.armorValue || 0;
+    const dsArmor   = getEffectiveArmor(target);
     const dsAbsorb  = Math.min(dsArmor, dsBase);
     let dsDmg       = dsBase - dsAbsorb;
     if (dsAbsorb > 0) logEvent(`<span class="log-event">🛡 ${target.name}'s armor absorbs ${dsAbsorb} physical damage!</span>`);
@@ -3547,7 +3846,7 @@ function triggerWolfBite(attackerSide, wolf, defender) {
     wbDmg = 0;
     if (defender.horseHp <= 0) dismountRider(defender, defenderSide);
   } else {
-    const wbArmor   = defender.armorValue || 0;
+    const wbArmor   = getEffectiveArmor(defender);
     const wbAbsorb  = Math.min(wbArmor, wbBase);
     wbDmg           = wbBase - wbAbsorb;
     if (wbAbsorb > 0) logEvent(`<span class="log-event">🛡 ${defender.name}'s armor absorbs ${wbAbsorb} physical damage!</span>`);
@@ -4269,6 +4568,12 @@ function playAttackSound(fighter) {
     playSound(fighter.attackCount <= 1 ? 'sound-holy' : 'sound-sword');
     return;
   }
+  // Paladin: Judgement-replaced attacks get their own holy sound; every other
+  // Paladin attack (both passives) uses the regular sword sound via soundMap below.
+  if (fighter.passiveKey === 'judgement' && fighter._judgementStrike) {
+    playSound('sound-holy');
+    return;
+  }
   const soundMap = {
     steadyaim:    'sound-arrow',
     doubleshot:   'sound-arrow',
@@ -4299,6 +4604,10 @@ function playAttackSound(fighter) {
     dragonfire:        'sound-fireball',
     wizardfirestorm:   'sound-fireball',
     truedamage:        'sound-sword',
+    auraofprotection:  'sound-sword',
+    judgement:         'sound-sword', // non-Judgement-strike attacks only — see early return above
+    barrage:           'sound-gun',
+    blademaster:       'sound-pirate',
   };
   // Demon alternates sounds to match its alternating animation
   if (fighter.passiveKey === 'demonblood') {
@@ -4312,6 +4621,14 @@ function playAttackSound(fighter) {
 
 function getAttackAni(fighter) {
   const key = fighter.passiveKey;
+  // Paladin: Judgement-replaced attacks get their own animation; the other
+  // Paladin attacks fall through to the default (SlashAni) at the bottom.
+  if (key === 'judgement' && fighter._judgementStrike) {
+    return { src: 'judgement.png', isImpact: true };
+  }
+  if (key === 'barrage') {
+    return { src: 'gun.png' };
+  }
   if (key === 'steadyaim' || key === 'doubleshot') {
     return { src: 'ArrowAni.png', rotate: true };
   }
@@ -4403,7 +4720,7 @@ function animateProjectile(src, fromEl, toEl, opts) {
 function initAudio() {
   const sfxIds = ['sound-button', 'sound-hit', 'sound-arrow', 'sound-fireball',
                   'sound-sword', 'sound-wand', 'sound-chain', 'sound-heal',
-                  'sound-holy', 'sound-lightning'];
+                  'sound-holy', 'sound-lightning', 'sound-gun', 'sound-pirate'];
   sfxIds.forEach(id => {
     const audio = document.getElementById(id);
     if (audio) {
@@ -4455,7 +4772,7 @@ function showModal(section) {
       <hr>
 
       <h4>Building Your Team</h4>
-      <p>Choose <strong>3 of the 12 available classes</strong>. Your first pick leads the battle.</p>
+      <p>Choose <strong>3 of the 14 available classes</strong>. Your first pick leads the battle.</p>
       <p>When you click a class, you are shown <strong>2 passive options</strong>. Pick one — your choice is locked for the entire match.</p>
       <p>The AI also picks 3 cards randomly and <strong>randomly chooses</strong> one of the two passives per card (50/50). Both teams and their chosen passives are revealed before battle starts.</p>
 
@@ -4483,12 +4800,14 @@ function showModal(section) {
       <p>Armor reduces <em>physical</em> damage only. It has no effect against magical attacks.</p>
 
       <h4>Damage Types</h4>
-      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Rider, Assassin (base attack), Marksman (base attack + Double Shot), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite).</p>
-      <p><strong>Magical damage</strong> — bypasses armor entirely. Dealt by: Cleric (all attacks), Mage (all attacks), Necromancer (all attacks), Shaman (all attacks), Druid pre-transform (first attack only).</p>
+      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Rider, Pirate (base attack + Barrage), Assassin (base attack), Marksman (base attack + Double Shot), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite), Paladin (half of every hit).</p>
+      <p><strong>Magical damage</strong> — bypasses armor entirely. Dealt by: Cleric (all attacks), Mage (all attacks), Necromancer (all attacks), Shaman (all attacks), Druid pre-transform (first attack only), Paladin (half of every hit, via Crusader Aura).</p>
+      <p><strong>True damage</strong> — bypasses armor <em>and</em> every other defensive stat (Fortify, Shield item stacks, wave-upgrade damage reduction). Dealt by: Paladin's Judgement strikes (all), Pirate's Blademaster Bleed DOT.</p>
       <p><strong>Mixed damage</strong> — some attacks from these classes split between physical and magical:</p>
       <ul>
         <li><strong>Assassin:</strong> base attack is physical; First Strike +30 bonus and ultimate +20 bonus are magical.</li>
         <li><strong>Death Knight:</strong> base attack is physical; Death Grip +20 bonus damage is magical.</li>
+        <li><strong>Paladin:</strong> every regular attack (Crusader Aura) splits 50/50 physical and magical — Judgement strikes are the exception and deal 100% true damage instead.</li>
       </ul>
 
       <hr>
@@ -4587,6 +4906,22 @@ function showModal(section) {
       <p><strong>Option A — Chain Heal:</strong> Every 2 attacks, heals the Shaman and all living allies for 20 HP each.</p>
       <p><strong>Option B — Lava Blast:</strong> Every 3 attacks, fires a massive 60 magical blast. Any overkill damage automatically carries over to the next living opponent.</p>
       <p><em>No traditional ultimate bar.</em> Lightning Shield replaces it as an always-on passive.</p>
+
+      <hr>
+
+      <h4>Paladin — 130 HP • 30 Damage • Mail Armor (+20) • Mixed Damage</h4>
+      <p><strong>Crusader Aura (innate, always active):</strong> half of every regular attack the Paladin lands is magical (bypasses armor) — the other half stays physical. This applies no matter which option below is chosen.</p>
+      <p><strong>Option A — Aura of Protection:</strong> Active for as long as the Paladin is alive, even while benched: every living ally — the Paladin included — gains +10 armor.</p>
+      <p><strong>Option B — Judgement:</strong> Every other attack is replaced by Judgement: base attack damage +20, dealt entirely as true damage (ignores armor, Fortify, Shield items, and wave-upgrade damage reduction), and heals the Paladin for 20 HP.</p>
+      <p><em>No traditional ultimate bar.</em> Crusader Aura is a permanent mechanic active for the entire match.</p>
+
+      <hr>
+
+      <h4>Pirate — 100 HP • 40 Damage • Leather Armor (+10)</h4>
+      <p><strong>The Barrel (innate, always active):</strong> the first time the Pirate drops to 50% HP or below against a given opponent, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can trigger again the next time a new opponent brings the Pirate below 50% HP.</p>
+      <p><strong>Option A — Barrage:</strong> Attacks use a pistol instead of a blade. Every other attack, fires an extra Barrage on top of the normal hit: 30 physical damage to the active opponent and every living benched opponent.</p>
+      <p><strong>Option B — Blademaster:</strong> Every landed hit inflicts Bleed: 10 true damage per turn and −50% healing effectiveness on the target. Persists while the target is benched; only clears on death or at the next 10-wave section boundary.</p>
+      <p><em>No traditional ultimate bar.</em> The Barrel is a permanent mechanic active for the entire match.</p>
 
       <hr>
 
@@ -4829,6 +5164,9 @@ function softResetFighter(fighter) {
   fighter.evasionAttackCount      = 0;
   fighter.evasionUsed             = false;   // resets each wave (new battle)
   fighter.doubleshotCount         = 0;
+  fighter.judgementCount          = 0;
+  fighter._judgementStrike        = false;
+  fighter.barrageCount            = 0;
   fighter.deathGripCount          = 0;
   fighter.fearCount               = 0;
   fighter.deathGripBonus          = 0;
@@ -5020,6 +5358,7 @@ function hardResetFighter(fighter) {
   fighter.steadyAimBonus   = 0;  // Marksman Steady Aim: strips cross-wave accumulated bonus
   fighter.poisonDotAmount  = 0;  // Dart-Peon poison: only cleared at 10-wave section boundaries
                                   // (waves 11/21/31/41, ...) — persists across normal waves/bench swaps
+  fighter.bleedDotAmount   = 0;  // Pirate Blademaster bleed: same persistence rule as poison above
 
   // Necromancer: reset ghoul spawn stats to base so the next ghoul starts fresh each set
   if (fighter.passiveKey === 'sacrifice' || fighter.passiveKey === 'reborn') {
@@ -5291,7 +5630,7 @@ function setSFXVolume(vol) {
 function applyVolumeToAllSounds(vol) {
   const sfxIds = ['sound-button', 'sound-hit', 'sound-arrow', 'sound-fireball',
                   'sound-sword', 'sound-wand', 'sound-chain', 'sound-heal',
-                  'sound-holy', 'sound-lightning'];
+                  'sound-holy', 'sound-lightning', 'sound-gun', 'sound-pirate'];
   sfxIds.forEach(id => {
     const audio = document.getElementById(id);
     if (audio) audio.volume = vol;
