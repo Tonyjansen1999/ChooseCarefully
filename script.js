@@ -2595,8 +2595,8 @@ function doAttack(attackerSide, attacker, defender, callback) {
     if (dmg > 0) {
       // Berserk: doubles incoming damage before any mitigation
       if (defender.berserk) dmg = Math.round(dmg * 2);
-      // Lightning Shield: reduces all incoming damage by 10
-      if (defender.lightningShieldActive) dmg = Math.max(0, dmg - 10);
+      // Lightning Shield: reduces all incoming damage by 10 (Judgement ignores it — true damage)
+      if (defender.lightningShieldActive && !attacker._judgementStrike) dmg = Math.max(0, dmg - 10);
       // Armor reduces physical portion only
       const armorVal = getEffectiveArmor(defender);
       let trueDmgPart = 0;
@@ -4397,8 +4397,13 @@ function getDmgType(data) {
 }
 
 function dmgTypeTag(attacker) {
+  // Paladin Judgement: the whole hit is true damage — checked first since
+  // _judgementStrike takes priority over Crusader Aura's normal 50/50 split.
+  if (attacker._judgementStrike) return '<span class="log-true">✝️ True</span>';
   if (isBaseAttackMagical(attacker)) return '<span class="log-mag">✨ Magical</span>';
-  if ((attacker._magicBonus || 0) > 0) return '<span class="log-mixed">⚔✨ Mixed</span>';
+  // Paladin's Crusader Aura splits every other attack 50/50 physical/magical —
+  // same "Mixed" label as Assassin/Death Knight's bonus-magical attacks.
+  if (attacker.id === 'paladin' || (attacker._magicBonus || 0) > 0) return '<span class="log-mixed">⚔✨ Mixed</span>';
   return '<span class="log-phys">⚔ Physical</span>';
 }
 

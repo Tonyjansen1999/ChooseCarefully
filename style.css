@@ -1176,6 +1176,7 @@ input[type="range"]::-moz-range-thumb {
 .log-phys  { color: #e8b44a; font-size: 0.78em; font-weight: 600; }
 .log-mag   { color: #9b7fe8; font-size: 0.78em; font-weight: 600; }
 .log-mixed { color: #c07cd0; font-size: 0.78em; font-weight: 600; }
+.log-true  { color: #ffd700; font-size: 0.78em; font-weight: 600; }
 
 /* ── Reborn ally (darkened) ── */
 .card-image.reborn img:not(.armor-icon) {
