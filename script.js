@@ -97,7 +97,7 @@ const CLASSES = [
     name: 'Assassin',
     image: 'Images/assassin.png',
     baseHp: 100,
-    baseDamage: 40,
+    baseDamage: 45,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 2,
     ultimateDescription: 'Every 2 attacks: next attack deals +20 ✨ Magical bonus damage (bypasses armor).',
@@ -130,9 +130,9 @@ const CLASSES = [
         description: 'Damage increases by 20 after each attack.',
       },
       {
-        key: 'doubleshot',
-        name: 'Double Shot',
-        description: 'Once every other turn, deals 40 ⚔ Physical damage to a random living benched opponent.',
+        key: 'hamstring',
+        name: 'Hamstring',
+        description: 'Every landed hit has a 33.33% chance to cripple the target: it skips its next turn and takes 20 ⚔ Physical fall damage.',
       },
     ],
   },
@@ -144,7 +144,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 2,
-    ultimateDescription: 'Every 2 attacks: exponential healing — first +10 HP, then +20, +40 (doubles each time, capped at +40 in Rogue Mode).',
+    ultimateDescription: 'Every 2 attacks: exponential healing — first +10 HP, then +20, +40 (doubles each time, capped at +40).',
     passives: [
       {
         key: 'deathgrip',
@@ -163,7 +163,7 @@ const CLASSES = [
     name: 'Joker',
     image: 'Images/Joker.png',
     baseHp: 110,
-    baseDamage: 40,
+    baseDamage: 50,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
     ultimateDescription: 'Always active: every attack is random — 33% miss (0 dmg), 33% normal, 33% critical hit (2× all damage).',
@@ -207,7 +207,7 @@ const CLASSES = [
     name: 'Rider',
     image: 'Images/Rider.png',
     baseHp: 70,
-    baseDamage: 40,
+    baseDamage: 35,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
     ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +10 ⚔ Physical anger per turn.',
@@ -215,7 +215,7 @@ const CLASSES = [
       {
         key: 'revival',
         name: 'Revival',
-        description: 'After 2 turns dismounted, the horse revives with 40 HP and the anger bonus resets. Horse revival is one-time only.',
+        description: 'After 2 turns dismounted, the horse revives with 40 HP and the Rider remounts, keeping the anger bonus built up so far. Horse revival is one-time only.',
       },
       {
         key: 'parry',
@@ -228,7 +228,7 @@ const CLASSES = [
     id: 'necromancer',
     name: 'Necromancer',
     image: 'Images/Necromancer.png',
-    baseHp: 200,
+    baseHp: 220,
     baseDamage: 25,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
@@ -264,7 +264,7 @@ const CLASSES = [
       {
         key: 'lavablast',
         name: 'Lava Blast',
-        description: 'Every 3 attacks: fires a massive 60 ✨ Magical blast. Overkill damage transfers to the next living opponent.',
+        description: 'Every 3 attacks: fires a massive 50 ✨ Magical blast. Overkill damage transfers to the next living opponent.',
       },
     ],
   },
@@ -273,7 +273,7 @@ const CLASSES = [
     name: 'Paladin',
     image: 'Images/Paladin.png',
     baseHp: 130,
-    baseDamage: 30,
+    baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
     ultimateDescription: 'Crusader Aura (always active): half of every hit the Paladin lands is ✨ Magical (bypasses armor) — the other half stays ⚔ Physical.',
@@ -298,7 +298,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 9999,
-    ultimateDescription: 'The Barrel (always active): the first time the Pirate drops to 50% HP or below against a given opponent, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can trigger again against each new opponent faced.',
+    ultimateDescription: 'The Barrel (always active, once per combat): the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage.',
     passives: [
       {
         key: 'barrage',
@@ -308,7 +308,7 @@ const CLASSES = [
       {
         key: 'blademaster',
         name: 'Blademaster',
-        description: 'Every landed hit inflicts Bleed: 10 true damage per turn and −50% healing effectiveness. Persists while benched; only clears on death or at the next 10-wave section.',
+        description: 'Every landed hit inflicts Bleed: 10 true damage per turn and −33.33% healing effectiveness. Persists while benched; only clears on death or at the next 10-wave section.',
       },
     ],
   },
@@ -385,7 +385,7 @@ function _waveEnemyBase() {
     shieldHp: 0, shieldHpMax: 0, burnDamage: 10, shieldMultiplier: 1, burnAmount: 0,
     poisonDotAmount: 0, healingReductionPct: 0, deathsDoorActive: false,
     shieldBlockAvailable: false, evasionAttackCount: 0, evasionUsed: false,
-    doubleshotCount: 0, thunderlordPendingStrike: false,
+    thunderlordPendingStrike: false,
     healStack: 0, deathGripCount: 0, fearCount: 0, deathGripBonus: 0,
     lotdTurnCount: 0, aceFlipped: false, aceResult: null, _jokerResult: null,
     transformed: false, wolfForm: false,
@@ -1318,15 +1318,13 @@ function makeFighter(classDef, passiveIndex) {
     evasionUsed: false,
     // Marksman Steady Aim: accumulated bonus damage — survives soft-resets, stripped on hard-reset
     steadyAimBonus: 0,
-    // Double Shot
-    doubleshotCount: 0,
     // Paladin
     judgementCount: 0,       // counts the Paladin's own attacks; Judgement fires on even counts
     _judgementStrike: false, // true only during a Judgement-replaced attack (true damage)
     // Pirate
     barrageCount: 0,           // counts the Pirate's own attacks; Barrage fires on even counts
     bleedDotAmount: 0,         // Blademaster bleed DOT (true damage); persists like poison
-    barrelProcdAgainst: [],    // opponent objects The Barrel has already triggered against
+    barrelProcd: false,        // The Barrel: once per combat; resets each wave/battle in softResetFighter
     // Thunderlord
     thunderlordPendingStrike: false,
     thunderlordMaxHpBonus: 0,   // total maxHp gained from kills; stripped on 10-wave reset
@@ -1973,9 +1971,6 @@ function buildPassiveDisplay(fighter) {
     if (fighter.evasionUsed) return '💨 Used';
     return `💨 ${fighter.evasionAttackCount}/2 attacks`;
   }
-  if (fighter.passiveKey === 'doubleshot') {
-    return `🎯 ${fighter.doubleshotCount}/2 turns`;
-  }
   if (fighter.passiveKey === 'thunderlord') {
     if (fighter.thunderlordPendingStrike) return '⚡ Strike pending!';
     return fighter.thunderlordSectionUsed ? '⚡ Used this section' : '⚡ Ready';
@@ -2206,12 +2201,6 @@ function runBattleTick() {
 
   const attacker = turn === 'player' ? state.playerActive : state.aiActive;
   const defender = turn === 'player' ? state.aiActive     : state.playerActive;
-
-  // Double Shot: counts real turns, not individual doAttack() calls — the
-  // Marksman's own ultimate fires a bonus extra attack within the same turn,
-  // which would otherwise feed this counter twice and make it proc faster
-  // than the intended "every other turn" cadence.
-  if (attacker.passiveKey === 'doubleshot') attacker.doubleshotCount++;
 
   runDotTicks(turn, attacker, [
     { amount: attacker.burnAmount,      fn: applyBurnTick },
@@ -2492,18 +2481,11 @@ function executeAttack(turn, attacker, defender) {
       return;
     }
 
-    // Marksman bonus attack (ultimate) — both Steady Aim and Double Shot
-    if ((attacker.passiveKey === 'steadyaim' || attacker.passiveKey === 'doubleshot') && attacker.ultimateReady) {
+    // Marksman bonus attack (ultimate) — both Steady Aim and Hamstring
+    if ((attacker.passiveKey === 'steadyaim' || attacker.passiveKey === 'hamstring') && attacker.ultimateReady) {
       attacker.ultimateReady = false;
       addLog(`<span class="log-event">⚡ Marksman fires again!</span>`);
       executeAttack(turn, attacker, defender);
-      return;
-    }
-
-    // Double Shot: after every 2 attacks
-    if (attacker.passiveKey === 'doubleshot' && attacker.doubleshotCount >= 2) {
-      attacker.doubleshotCount = 0;
-      triggerDoubleShot(turn, attacker, defender);
       return;
     }
 
@@ -2557,8 +2539,6 @@ function doAttack(attackerSide, attacker, defender, callback) {
 
   attacker.attackCount++;
   if (attacker.passiveKey === 'evasion') attacker.evasionAttackCount++;
-  // doubleshotCount is incremented once per real turn in runBattleTick, not
-  // here — see the comment there.
   if (attacker.passiveKey === 'deathgrip') attacker.deathGripCount++;
   if (attacker.passiveKey === 'fearofthedead') attacker.fearCount++;
 
@@ -2715,21 +2695,31 @@ function doAttack(attackerSide, attacker, defender, callback) {
     const alreadyBleeding = defender.bleedDotAmount > 0;
     defender.bleedDotAmount = 10 + (attacker.spellbookBonus || 0);
     if (!alreadyBleeding) {
-      defender.healingReductionPct = Math.min(1, (defender.healingReductionPct || 0) + 0.50);
-      addLog(`<span class="log-event">🩸 Bleed! ${defender.name} is bleeding! (${defender.bleedDotAmount} dmg/turn, -50% healing)</span>`);
+      defender.healingReductionPct = Math.min(1, (defender.healingReductionPct || 0) + (1 / 3));
+      addLog(`<span class="log-event">🩸 Bleed! ${defender.name} is bleeding! (${defender.bleedDotAmount} dmg/turn, -33% healing)</span>`);
     }
   }
 
+  // Marksman Hamstring: every landed hit has a 33.33% chance to cripple the
+  // target — it skips its next turn and takes 20 physical fall damage.
+  if (!blocked && !horseBlocked && dmg > 0 && attacker.passiveKey === 'hamstring' && Math.random() < (1 / 3)) {
+    const hamBase   = 20 + (attacker.spellbookBonus || 0);
+    const hamArmor  = getEffectiveArmor(defender);
+    const hamAbsorb = Math.min(hamArmor, hamBase);
+    const hamDmg    = Math.max(1, hamBase - hamAbsorb);
+    defender.hp = Math.max(0, defender.hp - hamDmg);
+    state[attackerSide === 'player' ? 'aiSkipNextTurn' : 'playerSkipNextTurn'] = true;
+    addLog(`<span class="log-event">🦵 Hamstring! ${defender.name} stumbles and falls — takes ${hamDmg} <span class="log-phys">⚔ Physical</span> fall damage and skips its next turn!</span>`);
+  }
+
   // Pirate's The Barrel: the first time the Pirate (as defender here) drops
-  // to 50% max HP or below against THIS specific opponent, drink a barrel of
-  // rum. Tracked by opponent object reference, not id, so a fresh enemy of
-  // the same class in a later wave can trigger it again.
+  // to 50% max HP or below, drink a barrel of rum. Once per combat — resets
+  // each new wave/battle in softResetFighter, not per opponent faced.
   if (!blocked && !horseBlocked && dmg > 0 &&
       (defender.passiveKey === 'barrage' || defender.passiveKey === 'blademaster') &&
       defender.hp > 0 && defender.hp <= Math.floor(defender.maxHp * 0.5) &&
-      !(defender.barrelProcdAgainst || []).includes(attacker)) {
-    defender.barrelProcdAgainst = defender.barrelProcdAgainst || [];
-    defender.barrelProcdAgainst.push(attacker);
+      !defender.barrelProcd) {
+    defender.barrelProcd = true;
     triggerTheBarrel(defender, defenderSide);
   }
 
@@ -3280,10 +3270,9 @@ function remountRider(fighter, side) {
   fighter.horseHp           = reviveHp;
   fighter.horseHpMax        = reviveHp;
   fighter.horseReviveUsed   = true;
-  fighter.dismountBonus     = 0;
   fighter.dismountedAttacks = 0;
   fighter.image             = 'Images/Rider.png';
-  addLog(`<span class="log-event">🐴 ${fighter.name}'s horse revives with ${reviveHp} HP! Remounted! Anger bonus resets.</span>`);
+  addLog(`<span class="log-event">🐴 ${fighter.name}'s horse revives with ${reviveHp} HP! Remounted! Anger bonus (+${fighter.dismountBonus}) carries over.</span>`);
   renderFighter(side, fighter);
 }
 
@@ -3308,7 +3297,7 @@ function spawnGhoul(necro, side) {
     shieldHp: 0, shieldHpMax: 0,
     burnDamage: 10, shieldMultiplier: 1, burnAmount: 0,
     shieldBlockAvailable: false, evasionAttackCount: 0, evasionUsed: false,
-    doubleshotCount: 0, thunderlordPendingStrike: false,
+    thunderlordPendingStrike: false,
     healStack: 0, deathGripCount: 0, fearCount: 0, deathGripBonus: 0,
     lotdTurnCount: 0, aceFlipped: false, aceResult: null, _jokerResult: null,
     transformed: false, wolfForm: false,
@@ -3474,11 +3463,11 @@ function triggerBarrage(pirate, pirateSide) {
 }
 
 // Pirate's The Barrel: heals the Pirate and permanently buffs the whole
-// living team. Triggered once per distinct opponent from doAttack (see the
-// barrelProcdAgainst check there). Stat changes apply immediately (so any
-// snapshot taken right after for the main attack's own log line already
-// reflects them); the log line/animation are deferred slightly so they
-// appear after that attack-result line, not before it.
+// living team. Triggered once per combat from doAttack (see the barrelProcd
+// check there). Stat changes apply immediately (so any snapshot taken right
+// after for the main attack's own log line already reflects them); the log
+// line/animation are deferred slightly so they appear after that
+// attack-result line, not before it.
 function triggerTheBarrel(pirate, side) {
   const picks = side === 'player' ? state.playerPicks : state.aiPicks;
   const healReduct = pirate.healingReductionPct || 0;
@@ -3544,7 +3533,7 @@ function triggerLavaBlast(shaman, shamSide, defender, defenderSide) {
   const shamEl   = document.getElementById(`${shamSide}-fighter`);
   const defEl    = document.getElementById(`${defenderSide}-fighter`);
 
-  const lavaDmg = (60 + (shaman.spellbookBonus || 0)) * (defender.berserk ? 2 : 1);
+  const lavaDmg = (50 + (shaman.spellbookBonus || 0)) * (defender.berserk ? 2 : 1);
   let overkill = 0;
   let lavaHitHorse = false;
   let horseOverkillOnRider = 0; // overkill from killing horse that bleeds directly into Rider (no reserve chain)
@@ -3700,64 +3689,6 @@ function triggerEvasion(attackerSide, assassin) {
     logEvent(`Enemy ${next.name} enters the battle!`);
     checkBothReady();
   }
-}
-
-// Double Shot: deal 30 to a random benched opponent
-function triggerDoubleShot(attackerSide, attacker, currentDefender) {
-  const oppPicks = attackerSide === 'player' ? state.aiPicks : state.playerPicks;
-  const targets = oppPicks.filter(f => !f.dead && f !== currentDefender);
-
-  if (targets.length === 0) {
-    logEvent(`🎯 Double Shot: no valid benched targets.`);
-    state.currentTurn = attackerSide === 'player' ? 'ai' : 'player';
-    renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
-    return;
-  }
-
-  const target   = targets[Math.floor(Math.random() * targets.length)];
-  const oppSide  = attackerSide === 'player' ? 'ai' : 'player';
-  const atkEl    = document.getElementById(`${attackerSide}-fighter`);
-  const targetCard = document.querySelector(`#${oppSide}-reserves [data-fighter-id="${target.id}"]`);
-
-  playSound('sound-arrow');
-  animateProjectile('ArrowAni.png', atkEl, targetCard || atkEl, { rotate: true });
-
-  setTimeout(() => {
-    let dsBase = (attacker.berserk ? 80 : 40) + (attacker.spellbookBonus || 0);
-    if (target.berserk) dsBase = Math.round(dsBase * 2);
-    const dsArmor   = getEffectiveArmor(target);
-    const dsAbsorb  = Math.min(dsArmor, dsBase);
-    let dsDmg       = dsBase - dsAbsorb;
-    if (dsAbsorb > 0) logEvent(`<span class="log-event">🛡 ${target.name}'s armor absorbs ${dsAbsorb} physical damage!</span>`);
-    target.hp = Math.max(0, target.hp - dsDmg);
-    logEvent(`🎯 Double Shot! ${target.name} hit for ${dsDmg} <span class="log-phys">⚔ Physical</span>! (${target.hp} HP remaining)`);
-    if (target.hp <= 0) {
-      // Death's Door: already protected — keep at 1 HP
-      if (target.deathsDoorActive) {
-        target.hp = 1;
-      // Death's Door: chance to survive at 1 HP (wave mode, AI targets only, wave > 10)
-      } else if (attackerSide === 'player' && state.waveMode && state.currentWave > 10) {
-        const ddChance = Math.min(0.10, Math.floor((state.currentWave - 1) / 10) * 0.025);
-        if (Math.random() < ddChance) {
-          target.hp = 1;
-          target.deathsDoorActive = true;
-          logEvent(`☠ Death's Door! ${target.name} clings to life at 1 HP!`);
-        } else {
-          target.dead = true;
-          logEvent(`💀 ${target.name} was eliminated by Double Shot!`);
-        }
-      } else {
-        target.dead = true;
-        logEvent(`💀 ${target.name} was eliminated by Double Shot!`);
-      }
-    }
-    renderReserves('player');
-    renderReserves('ai');
-    state.currentTurn = attackerSide === 'player' ? 'ai' : 'player';
-    renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
-  }, 350);
 }
 
 // ── NEW CLASS ABILITIES ───────────────────────────────────
@@ -3960,10 +3891,7 @@ function triggerUltimate(attacker, defender, attackerSide) {
   } else if (attacker.passiveKey === 'evasion') {
     attacker.ultimateReady = true;
     addLog(`<span class="log-event">✨ ${attacker.name} Ultimate! Next attack boosted!</span>`);
-  } else if (attacker.passiveKey === 'steadyaim') {
-    attacker.ultimateReady = true;
-    addLog(`<span class="log-event">✨ ${attacker.name} Ultimate! Bonus attack incoming!</span>`);
-  } else if (attacker.passiveKey === 'doubleshot') {
+  } else if (attacker.passiveKey === 'steadyaim' || attacker.passiveKey === 'hamstring') {
     attacker.ultimateReady = true;
     addLog(`<span class="log-event">✨ ${attacker.name} Ultimate! Bonus attack incoming!</span>`);
   } else if (attacker.passiveKey === 'deathgrip' || attacker.passiveKey === 'fearofthedead') {
@@ -4581,7 +4509,7 @@ function playAttackSound(fighter) {
   }
   const soundMap = {
     steadyaim:    'sound-arrow',
-    doubleshot:   'sound-arrow',
+    hamstring:    'sound-arrow',
     burn:         'sound-fireball',
     thunderlord:  'sound-fireball',
     fortify:      'sound-sword',
@@ -4634,7 +4562,7 @@ function getAttackAni(fighter) {
   if (key === 'barrage') {
     return { src: 'gun.png' };
   }
-  if (key === 'steadyaim' || key === 'doubleshot') {
+  if (key === 'steadyaim' || key === 'hamstring') {
     return { src: 'ArrowAni.png', rotate: true };
   }
   if (key === 'burn' || key === 'thunderlord') {
@@ -4805,7 +4733,7 @@ function showModal(section) {
       <p>Armor reduces <em>physical</em> damage only. It has no effect against magical attacks.</p>
 
       <h4>Damage Types</h4>
-      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Rider, Pirate (base attack + Barrage), Assassin (base attack), Marksman (base attack + Double Shot), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite), Paladin (half of every hit).</p>
+      <p><strong>Physical damage</strong> — reduced by the defender's armor value. Dealt by: Protector, Barbarian, Rider, Pirate (base attack + Barrage), Assassin (base attack), Marksman (base attack + Hamstring fall damage), Death Knight (base attack), Joker, Druid post-transform (base attack + Wolf Bite), Paladin (half of every hit).</p>
       <p><strong>Magical damage</strong> — bypasses armor entirely. Dealt by: Cleric (all attacks), Mage (all attacks), Necromancer (all attacks), Shaman (all attacks), Druid pre-transform (first attack only), Paladin (half of every hit, via Crusader Aura).</p>
       <p><strong>True damage</strong> — bypasses armor <em>and</em> every other defensive stat (Fortify, Shield item stacks, wave-upgrade damage reduction). Dealt by: Paladin's Judgement strikes (all), Pirate's Blademaster Bleed DOT.</p>
       <p><strong>Mixed damage</strong> — some attacks from these classes split between physical and magical:</p>
@@ -4853,7 +4781,7 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Assassin — 100 HP • 40 Damage • Leather Armor (+10) • Mixed Damage</h4>
+      <h4>Assassin — 100 HP • 45 Damage • Leather Armor (+10) • Mixed Damage</h4>
       <p><strong>Option A — First Strike:</strong> Always attacks first when entering battle. First attack in any fight deals +30 magical bonus damage (bypasses armor).</p>
       <p><strong>Option B — Evasion (one-time only):</strong> After completing exactly 2 attacks, the Assassin automatically retreats to the bench, heals 50% of all HP lost at that moment, and permanently gains +20 damage. If another living ally exists, the player then selects who enters next (the Assassin cannot re-enter immediately). The AI randomly selects a different ally. If no other ally is alive, Evasion cannot activate and the Assassin stays in battle. Evasion can fire only once per match — the healing, retreat, and damage bonus are strictly one-time, and attack counters are never reset.</p>
       <p><em>Ultimate (every 2 attacks):</em> Next attack deals +20 extra magical damage (bypasses armor).</p>
@@ -4862,7 +4790,7 @@ function showModal(section) {
 
       <h4>Marksman — 100 HP • 40 Damage • Leather Armor (+10)</h4>
       <p><strong>Option A — Steady Aim:</strong> Gains +20 damage permanently after every attack, growing stronger the longer it fights.</p>
-      <p><strong>Option B — Double Shot:</strong> Once every other turn, deals 40 damage to 1 random living <em>benched</em> opponent. Never targets the active opponent or dead cards. If two valid targets exist, one is chosen randomly. If none exist, nothing happens. The 40 damage persists when that card later enters battle. Double Shot's own turn-count is separate from the Marksman's ultimate — a bonus attack from the ultimate does not advance it.</p>
+      <p><strong>Option B — Hamstring:</strong> Every landed hit has a 33.33% chance to cripple the target: it takes 20 physical fall damage and skips its next turn. Can proc on the Marksman ultimate's bonus attack too.</p>
       <p><em>Ultimate (every 3 attacks):</em> Fires an additional attack immediately.</p>
 
       <hr>
@@ -4870,11 +4798,11 @@ function showModal(section) {
       <h4>Death Knight — 140 HP • 40 Damage • Mail Armor (+20) • Mixed Damage</h4>
       <p><strong>Option A — Death Grip:</strong> After every 3 attacks, activates Death Grip. A random benched enemy card is forcibly pulled into the active position (the previous active card moves to the bench), and the Death Knight immediately performs a free attack against it with +20 magical bonus damage (bypasses armor). Combat then continues against the newly pulled card. If no benched targets exist, Death Grip fizzles.</p>
       <p><strong>Option B — Fear of the Dead:</strong> After every 3 attacks, the opponent is overwhelmed with fear and must skip their very next turn completely. If the Death Knight triggers fear again before the skip is used, the previous skip is overwritten (not stacked).</p>
-      <p><em>Ultimate (every 2 attacks):</em> Heals exponentially — first trigger heals +10 HP, second +20 HP, third +40 HP, and so on (doubles each time). This healing stacks indefinitely.</p>
+      <p><em>Ultimate (every 2 attacks):</em> Heals exponentially — first trigger heals +10 HP, second +20 HP, third +40 HP, and so on (doubles each time), capped at +40 per trigger.</p>
 
       <hr>
 
-      <h4>Joker — 110 HP • 40 Damage • Cloth Armor (+0)</h4>
+      <h4>Joker — 110 HP • 50 Damage • Cloth Armor (+0)</h4>
       <p>The Joker is a wildcard. Every single attack the Joker makes goes through a random outcome roll first: <strong>33% miss</strong> (deals 0 damage), <strong>33% normal</strong> (standard damage), or <strong>33% critical hit</strong> (all damage for that attack is doubled). The Joker has no traditional ultimate charge — the RNG is always active.</p>
       <p><strong>Option A — Luck of the Draw:</strong> Every other attack (attacks 1, 3, 5…), flip a coin. Heads gives +40 bonus damage that turn. Tails gives nothing. Crucially, if the RNG rolls a miss but the coin showed heads, the +40 bonus still gets through — a miss only cancels the base damage, not the Luck bonus.</p>
       <p><strong>Option B — The Ace:</strong> Only once, when the Joker first enters battle (whether as a starting fighter or a reserve), flip a coin. Heads grants the Joker +50 HP and +10 damage permanently for the rest of the match. Tails gives nothing. This flip is instant and happens before any combat.</p>
@@ -4890,15 +4818,15 @@ function showModal(section) {
 
       <hr>
 
-      <h4>Rider — 70 HP • 40 Damage • Mail Armor (+20)</h4>
+      <h4>Rider — 70 HP • 35 Damage • Mail Armor (+20)</h4>
       <p>The Rider starts every match mounted on a <strong>horse with 60 HP</strong>. While mounted, <em>all</em> incoming damage is fully absorbed by the horse — the Rider itself takes nothing and damage does not overflow. On dismount the Rider permanently gains <strong>+10 physical bonus damage per attack</strong> (stacks with each attack until remounted or reset).</p>
-      <p><strong>Option A — Revival:</strong> After attacking twice while dismounted, the horse automatically revives with 40 HP and the Rider remounts. The anger bonus resets to 0. Revival is one-time only.</p>
+      <p><strong>Option A — Revival:</strong> After attacking twice while dismounted, the horse automatically revives with 40 HP and the Rider remounts. The anger bonus built up while dismounted carries over instead of resetting. Revival is one-time only.</p>
       <p><strong>Option B — Parry:</strong> While dismounted, the Rider blocks the first incoming attack, then every third attack after that (block, hit, hit, block…).</p>
       <p><em>No traditional ultimate bar.</em> The horse system is a permanent mechanic active for the entire match.</p>
 
       <hr>
 
-      <h4>Necromancer — 200 HP • 25 Damage • Cloth Armor (+0) • Magical Attacks</h4>
+      <h4>Necromancer — 220 HP • 25 Damage • Cloth Armor (+0) • Magical Attacks</h4>
       <p>The Necromancer is a high-risk powerhouse. Every turn it takes <strong>20 self-damage</strong>. To compensate, every 3rd turn it unleashes a <strong>Fire Storm</strong> that hits ALL living opponents for 30 magical damage (bypasses armor). Its own base attacks are also magical.</p>
       <p><strong>Option A — Sacrifice:</strong> A Ghoul grows in the background each turn (+30 max HP and +10 damage per turn; starts at 10 HP / 10 DMG). When the Necromancer dies, the Ghoul rises in its place as a physical attacker — effectively giving you a second life.</p>
       <p><strong>Option B — Reborn:</strong> Starting on the Necromancer's 3rd turn, it automatically revives one fallen ally at 50% HP and 50% damage. One-time only. The revived card is shown darkened to indicate its weakened state.</p>
@@ -4909,12 +4837,12 @@ function showModal(section) {
       <h4>Shaman — 120 HP • 30 Damage • Leather Armor (+10) • Magical Attacks</h4>
       <p>The Shaman's attacks are purely magical (bypass armor). It begins every match with an active <strong>Lightning Shield</strong>: reduces all incoming physical damage by 10 and retaliates with 10 magical damage against any physical attacker (if the attacker is mounted on a horse, the horse absorbs the retaliation).</p>
       <p><strong>Option A — Chain Heal:</strong> Every 2 attacks, heals the Shaman and all living allies for 20 HP each.</p>
-      <p><strong>Option B — Lava Blast:</strong> Every 3 attacks, fires a massive 60 magical blast. Any overkill damage automatically carries over to the next living opponent.</p>
+      <p><strong>Option B — Lava Blast:</strong> Every 3 attacks, fires a massive 50 magical blast. Any overkill damage automatically carries over to the next living opponent.</p>
       <p><em>No traditional ultimate bar.</em> Lightning Shield replaces it as an always-on passive.</p>
 
       <hr>
 
-      <h4>Paladin — 130 HP • 30 Damage • Mail Armor (+20) • Mixed Damage</h4>
+      <h4>Paladin — 130 HP • 40 Damage • Mail Armor (+20) • Mixed Damage</h4>
       <p><strong>Crusader Aura (innate, always active):</strong> half of every regular attack the Paladin lands is magical (bypasses armor) — the other half stays physical. This applies no matter which option below is chosen.</p>
       <p><strong>Option A — Aura of Protection:</strong> Active for as long as the Paladin is alive, even while benched: every living ally — the Paladin included — gains +10 armor.</p>
       <p><strong>Option B — Judgement:</strong> Every other attack is replaced by Judgement: base attack damage +20, dealt entirely as true damage (ignores armor, Fortify, Shield items, and wave-upgrade damage reduction), and heals the Paladin for 20 HP.</p>
@@ -4923,9 +4851,9 @@ function showModal(section) {
       <hr>
 
       <h4>Pirate — 100 HP • 40 Damage • Leather Armor (+10)</h4>
-      <p><strong>The Barrel (innate, always active):</strong> the first time the Pirate drops to 50% HP or below against a given opponent, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can trigger again the next time a new opponent brings the Pirate below 50% HP.</p>
+      <p><strong>The Barrel (innate, always active, once per combat):</strong> the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can only trigger once per battle (resets next wave/match).</p>
       <p><strong>Option A — Barrage:</strong> Attacks use a pistol instead of a blade. Every other attack, fires an extra Barrage on top of the normal hit: 30 physical damage to the active opponent and every living benched opponent.</p>
-      <p><strong>Option B — Blademaster:</strong> Every landed hit inflicts Bleed: 10 true damage per turn and −50% healing effectiveness on the target. Persists while the target is benched; only clears on death or at the next 10-wave section boundary.</p>
+      <p><strong>Option B — Blademaster:</strong> Every landed hit inflicts Bleed: 10 true damage per turn and −33.33% healing effectiveness on the target. Persists while the target is benched; only clears on death or at the next 10-wave section boundary.</p>
       <p><em>No traditional ultimate bar.</em> The Barrel is a permanent mechanic active for the entire match.</p>
 
       <hr>
@@ -4985,7 +4913,7 @@ function showModal(section) {
         <li>Nerfer quietly cripples high-damage reserve cards before they enter battle.</li>
         <li>Thunderlord Mage snowballs rapidly — it rewards aggressive play.</li>
         <li>Evasion Assassin is great for hit-and-run tactics, banking the +20 damage early.</li>
-        <li>Double Shot Marksman pressures the entire enemy roster, not just the active card.</li>
+        <li>Hamstring Marksman adds disruption on top of damage — every hit has a shot at skipping the opponent's turn.</li>
         <li>Death Grip punishes teams that rely on keeping their strongest card on the bench.</li>
         <li>Fear of the Dead combos with the Death Knight's exponential healing — skip turns = more time to stack heals.</li>
         <li>Joker is high-risk, high-reward. Pair it with Luck of the Draw for clutch moments even on misses.</li>
@@ -5168,10 +5096,10 @@ function softResetFighter(fighter) {
   fighter._jokerResult            = null;
   fighter.evasionAttackCount      = 0;
   fighter.evasionUsed             = false;   // resets each wave (new battle)
-  fighter.doubleshotCount         = 0;
   fighter.judgementCount          = 0;
   fighter._judgementStrike        = false;
   fighter.barrageCount            = 0;
+  fighter.barrelProcd             = false;
   fighter.deathGripCount          = 0;
   fighter.fearCount               = 0;
   fighter.deathGripBonus          = 0;
