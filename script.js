@@ -281,7 +281,7 @@ const CLASSES = [
       {
         key: 'auraofprotection',
         name: 'Aura of Protection',
-        description: 'Always active while the Paladin is alive, even benched: every living ally (Paladin included) gains +10 armor.',
+        description: 'Always active while the Paladin is alive, even benched: every living ally (Paladin included) gains +10 armor and +10 magic resist.',
       },
       {
         key: 'judgement',
@@ -298,7 +298,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 9999,
-    ultimateDescription: 'The Barrel (always active, once per combat): the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage.',
+    ultimateDescription: 'The Barrel (always active, once per combat): the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team gains +20 max HP and +10 damage (resets at every 10-wave boundary in Rogue Mode).',
     passives: [
       {
         key: 'barrage',
@@ -527,7 +527,7 @@ function buildDragon() {
     ..._waveEnemyBase(),
     id: 'dragon', name: 'Dragon', image: 'Images/Dragon.png',
     hp: 1200, maxHp: 1200, damage: 130, baseDamage: 130,
-    armorType: 'mail', armorValue: 20,
+    armorType: 'scale', armorValue: 40,
     passiveKey: 'dragonfire', passiveName: 'Inferno',
     passive: 'Every 3rd attack launches a fireball hitting all living player cards for 50 damage.',
     passives: [{ key: 'dragonfire', name: 'Inferno', description: 'Every 3rd attack, all living player cards take 50 damage.' }],
@@ -571,13 +571,13 @@ const WAVE_UPGRADES = [
 const BAG_SLOTS = 9;
 const WAVE_ITEMS = {
   potion:      { id: 'potion',      name: 'Health Potion', image: 'Images/Potion.png',      rarity: 'common',    weight: 35, consumable: true,  unique: false, maxStack: 3, desc: 'Use in the lobby to restore 70 HP to this card. Stacks up to 3.' },
-  revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 14, consumable: true,  unique: true,  desc: 'Use in the lobby (even from a fallen card bag): revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
-  power:       { id: 'power',       name: 'Power',         image: 'Images/Power.png',       rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 base damage (stacks). Effect applied immediately on pickup.' },
-  spikyvest:   { id: 'spikyvest',   name: 'Spiky Vest',    image: 'Images/SpikyVest.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 armor and +10 retaliation damage per stack. Attackers take retaliation damage when they hit you (physical only).' },
-  spellbook:   { id: 'spellbook',   name: 'Spellbook',     image: 'Images/Spellbook.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10 to all passive and ultimate effects per stack — damage, healing, shields, and damage reduction all scale up. Effect applied immediately.' },
-  lifesteal:   { id: 'lifesteal',   name: 'Lifesteal',     image: 'Images/Lifesteal.png',   rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+10% lifesteal per stack (stacks). Effect applied immediately.' },
-  shield:      { id: 'shield',      name: 'Shield',        image: 'Images/Shield.png',      rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: 'Reduces incoming physical damage by 10% per stack.' },
-  magicarmor:  { id: 'magicarmor',  name: 'Magic Armor',   image: 'Images/MagicArmor.png',  rarity: 'rare',      weight: 8,  stackable: true,   unique: false, desc: '+15 flat magical damage reduction and +10 max HP per stack.' },
+  revive:      { id: 'revive',      name: 'Revive',        image: 'Images/Revive.png',      rarity: 'rare',      weight: 15, consumable: true,  unique: true,  desc: 'Use in the lobby (even from a fallen card bag): revive a dead ally to 50% of their max HP, or heal self 25% of your max HP if no one is dead.' },
+  power:       { id: 'power',       name: 'Power',         image: 'Images/Power.png',       rarity: 'rare',      weight: 9,  stackable: true,   unique: false, desc: '+10 base damage (stacks). Effect applied immediately on pickup.' },
+  spikyvest:   { id: 'spikyvest',   name: 'Spiky Vest',    image: 'Images/SpikyVest.png',   rarity: 'rare',      weight: 9,  stackable: true,   unique: false, desc: '+10 armor and +10 retaliation damage per stack. Attackers take retaliation damage when they hit you (physical only).' },
+  spellbook:   { id: 'spellbook',   name: 'Spellbook',     image: 'Images/Spellbook.png',   rarity: 'rare',      weight: 3,  stackable: true,   unique: false, desc: '+10 to all passive and ultimate effects per stack — damage, healing, shields, and damage reduction all scale up. Also grants +10 armor and +10 magic resist per stack. Effect applied immediately.' },
+  lifesteal:   { id: 'lifesteal',   name: 'Lifesteal',     image: 'Images/Lifesteal.png',   rarity: 'rare',      weight: 9,  stackable: true,   unique: false, desc: '+10% lifesteal per stack (stacks). Effect applied immediately.' },
+  shield:      { id: 'shield',      name: 'Shield',        image: 'Images/Shield.png',      rarity: 'rare',      weight: 9,  stackable: true,   unique: false, desc: 'Reduces incoming physical damage by 10% per stack.' },
+  magicarmor:  { id: 'magicarmor',  name: 'Magic Armor',   image: 'Images/MagicArmor.png',  rarity: 'rare',      weight: 9,  stackable: true,   unique: false, desc: '+15 flat magical damage reduction and +10 max HP per stack.' },
   angel:       { id: 'angel',       name: 'Angel',         image: 'Images/Angel.png',       rarity: 'legendary', weight: 2,  unique: true,      desc: 'Revives this card on death: +50 max HP, +30 DMG, +10 passive DMG. Consumed on use. Max 1.' },
   speed:       { id: 'speed',       name: 'Speed',         image: 'Images/Speed.png',       rarity: 'legendary', weight: 2,  unique: true,      desc: 'Always win the initiative coin flip. Max 1.' },
 };
@@ -628,7 +628,7 @@ function equipItem(fighter, item) {
     necro.items.push({ ...item });
     // Mirror permanent stat bonuses to the Necromancer so they carry over on revival.
     if (item.id === 'power')      { necro.baseDamage += 10; necro.damage = Math.max(necro.damage, necro.baseDamage); }
-    if (item.id === 'spellbook')  { necro.spellbookBonus       = (necro.spellbookBonus       || 0) + 10; }
+    if (item.id === 'spellbook')  { necro.spellbookBonus       = (necro.spellbookBonus       || 0) + 10; necro.armorValue = (necro.armorValue || 0) + 10; necro.magicDmgReduction = (necro.magicDmgReduction || 0) + 10; }
     if (item.id === 'lifesteal')  { necro.lifeStealStacks      = (necro.lifeStealStacks       || 0) + 1;  }
     if (item.id === 'shield')     { necro.physicalDmgReduction = (necro.physicalDmgReduction  || 0) + 0.10; }
     if (item.id === 'spikyvest')  { necro.armorValue           = (necro.armorValue            || 0) + 10; necro.spikyRetaliDmg = (necro.spikyRetaliDmg || 0) + 10; }
@@ -643,8 +643,10 @@ function equipItem(fighter, item) {
     fighter.damage     += 10;
     addLog(`<span class="log-event">⚔ Power! ${fighter.name} gains +10 base damage permanently!</span>`);
   } else if (item.id === 'spellbook') {
-    fighter.spellbookBonus = (fighter.spellbookBonus || 0) + 10;
-    addLog(`<span class="log-event">📖 Spellbook! ${fighter.name} gains +10 passive/ultimate damage permanently!</span>`);
+    fighter.spellbookBonus   = (fighter.spellbookBonus   || 0) + 10;
+    fighter.armorValue       = (fighter.armorValue       || 0) + 10;
+    fighter.magicDmgReduction = (fighter.magicDmgReduction || 0) + 10;
+    addLog(`<span class="log-event">📖 Spellbook! ${fighter.name} gains +10 passive/ultimate damage, +10 armor, and +10 magic resist permanently!</span>`);
   } else if (item.id === 'lifesteal') {
     fighter.lifeStealStacks = (fighter.lifeStealStacks || 0) + 1;
     addLog(`<span class="log-event">💉 Lifesteal! ${fighter.name} gains +10% lifesteal permanently!</span>`);
@@ -1164,6 +1166,14 @@ function hideItemTooltip() {
   }, 150);
 }
 
+// Explicit close (✕ button) — phones have no "mouse away" to dismiss a
+// hover popup, so this hides immediately with no delay.
+function closeItemTooltip() {
+  clearTimeout(_bagTooltipTimeout);
+  const t = document.getElementById('item-bag-tooltip');
+  if (t) t.style.display = 'none';
+}
+
 // Attach a bag icon to a DOM element (card or fighter slot), pointing at fighter data.
 function attachBagIcon(containerEl, fighter) {
   if (!state.waveMode || !fighter.items) return;
@@ -1207,7 +1217,7 @@ function getActiveBuffs(fighter) {
   // Aura of Protection benefits the whole team, including cards that aren't
   // the Paladin themselves — getEffectiveArmor already encodes exactly when
   // that applies, so reuse it here instead of re-deriving the same check.
-  add('🛡️', 'Aura of Protection', getEffectiveArmor(fighter) > (fighter.armorValue || 0), `+10 armor (from Paladin)`);
+  add('🛡️', 'Aura of Protection', getEffectiveArmor(fighter) > (fighter.armorValue || 0), `+10 armor &amp; +10 magic resist (from Paladin)`);
 
   return buffs;
 }
@@ -1243,6 +1253,13 @@ function hideBuffTooltip() {
     const t = document.getElementById('buff-tooltip');
     if (t) t.style.display = 'none';
   }, 150);
+}
+
+// Explicit close (✕ button) — see closeItemTooltip() for why this exists.
+function closeBuffTooltip() {
+  clearTimeout(_buffTooltipTimeout);
+  const t = document.getElementById('buff-tooltip');
+  if (t) t.style.display = 'none';
 }
 
 // Attach the buff icon to a DOM element (card or fighter slot), pointing at
@@ -1325,6 +1342,8 @@ function makeFighter(classDef, passiveIndex) {
     barrageCount: 0,           // counts the Pirate's own attacks; Barrage fires on even counts
     bleedDotAmount: 0,         // Blademaster bleed DOT (true damage); persists like poison
     barrelProcd: false,        // The Barrel: once per combat; resets each wave/battle in softResetFighter
+    barrelHpBonus: 0,          // cumulative maxHp granted by The Barrel this 10-wave section; stripped in hardResetFighter
+    barrelDmgBonus: 0,         // cumulative baseDamage granted by The Barrel this 10-wave section; stripped in hardResetFighter
     // Thunderlord
     thunderlordPendingStrike: false,
     thunderlordMaxHpBonus: 0,   // total maxHp gained from kills; stripped on 10-wave reset
@@ -2055,10 +2074,11 @@ function showReserveTooltip(event, fighter) {
     document.body.appendChild(tip);
   }
 
-  const armorLabel = { cloth: 'Cloth (+0)', leather: 'Leather (+10)', mail: 'Mail (+20)' }[fighter.armorType] || fighter.armorType;
+  const armorLabel = { cloth: 'Cloth (+0)', leather: 'Leather (+10)', mail: 'Mail (+20)', scale: 'Scale (+40)' }[fighter.armorType] || fighter.armorType;
   const passiveText = (typeof getPassiveDisplay === 'function') ? getPassiveDisplay(fighter) : (fighter.passive || '');
 
   let html = `
+    <span class="tooltip-close" onclick="hideReserveTooltip()">✕</span>
     <div class="rct-name">${fighter.dead ? '💀 ' : ''}${fighter.name}</div>
     <div class="rct-stats">HP ${fighter.hp}/${fighter.maxHp}${fighter.shieldHp > 0 ? ` +${fighter.shieldHp}🛡` : ''} · DMG ${displayDamage(fighter)} · ${armorLabel}</div>
     <div class="rct-passive"><strong>${fighter.passiveName}:</strong> ${passiveText}</div>
@@ -2527,6 +2547,18 @@ function getEffectiveArmor(fighter) {
   return hasAura ? base + 10 : base;
 }
 
+// Paladin's Aura of Protection also grants +10 magic resist (flat, same
+// shape as the +10 armor above) — same on-the-fly computation, same team
+// lookup, so it turns on/off correctly as the Paladin lives/dies.
+function getEffectiveMagicResist(fighter) {
+  const base  = fighter.magicDmgReduction || 0;
+  const picks = (state.playerPicks && state.playerPicks.includes(fighter)) ? state.playerPicks
+              : (state.aiPicks && state.aiPicks.includes(fighter))         ? state.aiPicks
+              : null;
+  const hasAura = picks && picks.some(f => !f.dead && f.passiveKey === 'auraofprotection');
+  return hasAura ? base + 10 : base;
+}
+
 // ── ATTACK ────────────────────────────────────────────────
 function doAttack(attackerSide, attacker, defender, callback) {
   const defenderSide = attackerSide === 'player' ? 'ai' : 'player';
@@ -2615,11 +2647,12 @@ function doAttack(attackerSide, attacker, defender, callback) {
           addLog(`<span class="log-event">🛡 ${defender.name}'s armor absorbs ${absorbed} physical damage!</span>`);
         }
       }
-      // Magic Armor: flat reduction vs magical attacks (wave mode, player fighters)
-      if (isBaseAttackMagical(attacker) && (defender.magicDmgReduction || 0) > 0 && dmg > 1) {
-        const magAbs = Math.min(defender.magicDmgReduction, dmg - 1); // always leave at least 1
+      // Magic Armor + Paladin's Aura of Protection: flat reduction vs magical attacks
+      const magicResistVal = getEffectiveMagicResist(defender);
+      if (isBaseAttackMagical(attacker) && magicResistVal > 0 && dmg > 1) {
+        const magAbs = Math.min(magicResistVal, dmg - 1); // always leave at least 1
         dmg -= magAbs;
-        addLog(`<span class="log-event">🔮 Magic Armor absorbs ${magAbs} magical damage!</span>`);
+        addLog(`<span class="log-event">🔮 Magic resist absorbs ${magAbs} magical damage!</span>`);
       }
       // Passive defense (Fortify etc.) applied last; trueDmgPart bypasses it
       dmg = applyPassiveDefend(defender, dmg, trueDmgPart);
@@ -3392,11 +3425,13 @@ function triggerFireStorm(necro, necroSide) {
 
   setTimeout(() => {
     const stormDmg = 30 + (necro.spellbookBonus || 0);
+    let activeKilled = false;
     // Hit active opponent (let checkDeaths handle death, don't set dead here)
     if (oppActive && !oppActive.dead && oppActive.hp > 0) {
       const dmgDealt = stormDmg * (oppActive.berserk ? 2 : 1);
       oppActive.hp = Math.max(0, oppActive.hp - dmgDealt);
       addLog(`<span class="log-event">🔥 Fire Storm! ${oppActive.name} hit for ${dmgDealt} <span class="log-mag">✨ Magical</span>! (${oppActive.hp} HP)</span>`);
+      if (oppActive.hp <= 0) activeKilled = true;
     }
     // Hit living reserves (mark dead directly since checkDeaths ignores reserves)
     oppPicks.forEach(f => {
@@ -3412,6 +3447,13 @@ function triggerFireStorm(necro, necroSide) {
     renderFighter(oppSide, oppActive);
     renderReserves('player');
     renderReserves('ai');
+
+    // Fire Storm's active-target hit lands after the main attack's own
+    // checkDeaths() already ran — see the identical fix in triggerBarrage.
+    if (activeKilled) {
+      clearTimeout(state.battleTimeout);
+      checkDeaths();
+    }
   }, 350);
 }
 
@@ -3433,6 +3475,7 @@ function triggerBarrage(pirate, pirateSide) {
   animateProjectile('gun.png', pirateEl, activeEl, { flip: pirateSide === 'ai' });
 
   setTimeout(() => {
+    let activeKilled = false;
     // Hit active opponent (let checkDeaths handle death, don't set dead here)
     if (oppActive && !oppActive.dead && oppActive.hp > 0) {
       const armorVal = getEffectiveArmor(oppActive);
@@ -3440,6 +3483,7 @@ function triggerBarrage(pirate, pirateSide) {
       const dmgDealt = Math.max(1, baseDmg - absorbed) * (oppActive.berserk ? 2 : 1);
       oppActive.hp = Math.max(0, oppActive.hp - dmgDealt);
       addLog(`<span class="log-event">🔫 Barrage! ${oppActive.name} hit for ${dmgDealt} <span class="log-phys">⚔ Physical</span>! (${oppActive.hp} HP)</span>`);
+      if (oppActive.hp <= 0) activeKilled = true;
     }
 
     // Second wave — same sound again, projectile toward each living reserve.
@@ -3459,6 +3503,16 @@ function triggerBarrage(pirate, pirateSide) {
     renderFighter(oppSide, oppActive);
     renderReserves('player');
     renderReserves('ai');
+
+    // Barrage's active-target hit lands after the main attack's own
+    // checkDeaths() already ran (this fires on its own delayed schedule).
+    // If it was the killing blow, nothing else will ever notice the 0 HP —
+    // cancel the turn-flip already queued by that earlier checkDeaths() and
+    // process the death now, same as Dragon's Inferno does.
+    if (activeKilled) {
+      clearTimeout(state.battleTimeout);
+      checkDeaths();
+    }
   }, 350);
 }
 
@@ -3483,6 +3537,10 @@ function triggerTheBarrel(pirate, side) {
     f.hp          = Math.min(f.maxHp, f.hp + hpBonus);
     f.baseDamage += dmgBonus;
     f.damage     += dmgBonus;
+    // Tracked separately so hardResetFighter can strip exactly this much back
+    // out at the next 10-wave section boundary (Rogue Mode only).
+    f.barrelHpBonus  = (f.barrelHpBonus  || 0) + hpBonus;
+    f.barrelDmgBonus = (f.barrelDmgBonus || 0) + dmgBonus;
   });
 
   setTimeout(() => {
@@ -4335,11 +4393,14 @@ function dmgTypeTag(attacker) {
   return '<span class="log-phys">⚔ Physical</span>';
 }
 
+// Armor types without their own dedicated icon file reuse an existing one here.
+const ARMOR_ICON_OVERRIDES = { scale: 'Mail' }; // Dragon's Scale armor — no art yet, borrows Mail's icon
 function armorBadgeHtml(data) {
   const type = data.armorType;
   if (!type) return '';
   const val = data.armorValue || 0;
-  const icon = `Images/Armor${type.charAt(0).toUpperCase() + type.slice(1)}.png`;
+  const iconName = ARMOR_ICON_OVERRIDES[type] || (type.charAt(0).toUpperCase() + type.slice(1));
+  const icon = `Images/Armor${iconName}.png`;
   const label = val > 0 ? `+${val}` : '';
   return `<div class="armor-badge"><img class="armor-icon" src="${icon}" alt="${type}" />${label ? `<span class="armor-val">${label}</span>` : ''}</div>`;
 }
@@ -4724,8 +4785,9 @@ function showModal(section) {
       <h3>Armor &amp; Damage Types</h3>
 
       <h4>Armor</h4>
-      <p>Every card wears one of three armor types, shown as a small icon in the top-left of the card:</p>
+      <p>Every card wears an armor type, shown as a small icon in the top-left of the card:</p>
       <ul>
+        <li><strong>Scale (+40)</strong> — Dragon only. Reduces incoming physical damage by 40 per hit. Shown with the Mail icon for now.</li>
         <li><strong>Mail (+20)</strong> — Heavy armor. Reduces incoming physical damage by 20 per hit.</li>
         <li><strong>Leather (+10)</strong> — Medium armor. Reduces incoming physical damage by 10 per hit.</li>
         <li><strong>Cloth (+0)</strong> — No armor. Takes full physical damage.</li>
@@ -4844,14 +4906,14 @@ function showModal(section) {
 
       <h4>Paladin — 130 HP • 40 Damage • Mail Armor (+20) • Mixed Damage</h4>
       <p><strong>Crusader Aura (innate, always active):</strong> half of every regular attack the Paladin lands is magical (bypasses armor) — the other half stays physical. This applies no matter which option below is chosen.</p>
-      <p><strong>Option A — Aura of Protection:</strong> Active for as long as the Paladin is alive, even while benched: every living ally — the Paladin included — gains +10 armor.</p>
+      <p><strong>Option A — Aura of Protection:</strong> Active for as long as the Paladin is alive, even while benched: every living ally — the Paladin included — gains +10 armor and +10 magic resist.</p>
       <p><strong>Option B — Judgement:</strong> Every other attack is replaced by Judgement: base attack damage +20, dealt entirely as true damage (ignores armor, Fortify, Shield items, and wave-upgrade damage reduction), and heals the Paladin for 20 HP.</p>
       <p><em>No traditional ultimate bar.</em> Crusader Aura is a permanent mechanic active for the entire match.</p>
 
       <hr>
 
       <h4>Pirate — 100 HP • 40 Damage • Leather Armor (+10)</h4>
-      <p><strong>The Barrel (innate, always active, once per combat):</strong> the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team permanently gains +20 max HP and +10 damage. Can only trigger once per battle (resets next wave/match).</p>
+      <p><strong>The Barrel (innate, always active, once per combat):</strong> the first time the Pirate drops to 50% HP or below, drinks a barrel of rum — heals self 20 HP, and the whole living team gains +20 max HP and +10 damage. Can only trigger once per battle (resets next wave/match). In Rogue Mode, the accumulated team buff is also stripped at every 10-wave section boundary (waves 11/21/31/41…), same as Thunderlord's and Joker's growth bonuses.</p>
       <p><strong>Option A — Barrage:</strong> Attacks use a pistol instead of a blade. Every other attack, fires an extra Barrage on top of the normal hit: 30 physical damage to the active opponent and every living benched opponent.</p>
       <p><strong>Option B — Blademaster:</strong> Every landed hit inflicts Bleed: 10 true damage per turn and −33.33% healing effectiveness on the target. Persists while the target is benched; only clears on death or at the next 10-wave section boundary.</p>
       <p><em>No traditional ultimate bar.</em> The Barrel is a permanent mechanic active for the entire match.</p>
@@ -4901,7 +4963,7 @@ function showModal(section) {
         <li><strong>Peon</strong> — 60 HP / 35 DMG / Leather Armor. <em>Double Strike:</em> attacks twice every other turn. Scales: +10 HP and +5 DMG per 10 waves.</li>
         <li><strong>Dart-Peon</strong> — 60 HP / 30 DMG / Leather Armor. Appears from wave 6 onward. <em>Poison Dart:</em> every attack inflicts Poison on the target — 10 magical damage per turn and −50% healing effectiveness. The poison persists even while the card is benched, and only clears on death or at the next 10-wave section boundary (waves 11/21/31/41...). Scales every other set: +15 HP and +5 DMG at sets 2 and 4.</li>
         <li><strong>Knight</strong> — 100 HP / 55 DMG / Mail Armor. <em>Iron Guard:</em> blocks the first direct attack from each new player fighter. Scales: +15 HP and +10 DMG per 10 waves.</li>
-        <li><strong>Dragon</strong> — 1200 HP / 130 DMG / Mail Armor. Both its base attack and <em>Inferno</em> are fully magical (bypass armor). <em>Inferno:</em> every 3rd attack breathes fire on all living player cards for 50 magical damage and inflicts −50% healing and −10 magic resistance on the active target. Wave 50 only — does not scale.</li>
+        <li><strong>Dragon</strong> — 1200 HP / 130 DMG / Scale Armor (+40). Both its base attack and <em>Inferno</em> are fully magical (bypass armor). <em>Inferno:</em> every 3rd attack breathes fire on all living player cards for 50 magical damage and inflicts −50% healing and −10 magic resistance on the active target. Wave 50 only — does not scale.</li>
       </ul>
 
       <hr>
@@ -5282,6 +5344,21 @@ function hardResetFighter(fighter) {
     fighter.aceHpBonus = 0;
   }
   fighter.aceFlipped = false;   // allow Ace to trigger again next cycle
+
+  // Pirate's The Barrel team buff: strip whatever this fighter accumulated
+  // from Barrel procs during the section that just ended. Re-applies
+  // fighter.damage = fighter.baseDamage afterward since the top-of-function
+  // assignment above ran before baseDamage was corrected here.
+  const barrelHp  = fighter.barrelHpBonus  || 0;
+  const barrelDmg = fighter.barrelDmgBonus || 0;
+  if (barrelHp > 0 || barrelDmg > 0) {
+    fighter.maxHp      = Math.max(1, fighter.maxHp - barrelHp);
+    fighter.hp         = Math.min(fighter.hp, fighter.maxHp);
+    fighter.baseDamage = Math.max(1, fighter.baseDamage - barrelDmg);
+    fighter.damage     = fighter.baseDamage;
+    fighter.barrelHpBonus  = 0;
+    fighter.barrelDmgBonus = 0;
+  }
 
   fighter.burnDamage       = 10;  // Mage: strips burn-damage-up stacks
   fighter.healStack        = 0;   // Death Knight: strips exponential heal stacks

@@ -1546,6 +1546,29 @@ input[type="range"]::-moz-range-thumb {
 }
 .card-buff-icon:hover { opacity: 1; transform: scale(1.15); }
 
+/* ── Shared close button for hover/tap popups (phones can't "mouse away" to
+   dismiss these, so every popup gets an explicit tap target) ── */
+.tooltip-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface3, rgba(255,255,255,0.08));
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  z-index: 1;
+}
+.tooltip-close:hover,
+.tooltip-close:active { background: var(--border); color: var(--text, #fff); }
+
 /* ── Active buffs tooltip ── */
 .buff-tooltip {
   position: fixed;

@@ -184,12 +184,14 @@
 
   <!-- ===== ITEM BAG TOOLTIP (global, positioned by JS) ===== -->
   <div id="item-bag-tooltip" class="item-bag-tooltip" style="display:none">
+    <span class="tooltip-close" onclick="closeItemTooltip()">✕</span>
     <div class="ibt-title"></div>
     <div id="ibt-slots" class="ibt-slots"></div>
   </div>
 
   <!-- ===== ACTIVE BUFFS TOOLTIP (global, positioned by JS; Rogue Mode) ===== -->
   <div id="buff-tooltip" class="buff-tooltip" style="display:none">
+    <span class="tooltip-close" onclick="closeBuffTooltip()">✕</span>
     <div class="bft-title"></div>
     <div class="bft-list"></div>
   </div>
