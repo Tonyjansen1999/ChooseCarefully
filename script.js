@@ -1485,6 +1485,14 @@ document.addEventListener('keydown', function _waveLobbyEnterHandler(e) {
 document.getElementById('btn-pause').addEventListener('click', togglePause);
 document.getElementById('btn-log').addEventListener('click', toggleBattleLog);
 
+// Battle speed control — scales the pacing delays between turns/attacks.
+(function () {
+  const sel = document.getElementById('battle-speed');
+  if (!sel) return;
+  sel.value = String(getBattleSpeed());
+  sel.addEventListener('change', (e) => setBattleSpeed(parseFloat(e.target.value)));
+})();
+
 // Keep item bag tooltip open when the cursor moves into it (so Use buttons are clickable)
 (function () {
   const tt = document.getElementById('item-bag-tooltip');
@@ -1529,7 +1537,7 @@ function togglePause() {
     btn.classList.remove('is-paused');
     // Small delay so any in-flight animation setTimeout callbacks finish before
     // the next tick starts — prevents the "super fast" double-tick race condition.
-    state.battleTimeout = setTimeout(runBattleTick, 300);
+    state.battleTimeout = setTimeout(runBattleTick, pace(300));
   }
 }
 
@@ -1886,7 +1894,7 @@ function revealAndBattle() {
     applyOnEnterEffects(state.playerActive, 'player');
     applyOnEnterEffects(state.aiActive, 'ai');
     initCombatTurn(state.playerActive, state.aiActive);
-    state.battleTimeout = setTimeout(runBattleTick, 1200);
+    state.battleTimeout = setTimeout(runBattleTick, pace(1200));
   } catch (err) {
     // The async battle-tick loop never actually started, so the lock and the
     // button must be released here — otherwise a setup error would leave the
@@ -2215,7 +2223,7 @@ function runBattleTick() {
     logEvent(`😱 ${skipped.name} is paralyzed by fear and skips their turn!`);
     state.currentTurn = turn === 'player' ? 'ai' : 'player';
     renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     return;
   }
 
@@ -2247,7 +2255,7 @@ function applyBurnTick(side, fighter, callback) {
     if (horseDiedBurn) addLog(`<span class="log-event">🐴 The horse was defeated! ${fighter.name} dismounts as a mouse!</span>`);
     showFloatDmg(document.getElementById(`${side}-fighter`), burnDmg);
     renderFighter(side, fighter);
-    setTimeout(callback, 400);
+    setTimeout(callback, pace(400));
     return;
   }
 
@@ -2265,7 +2273,7 @@ function applyBurnTick(side, fighter, callback) {
       fighter.hp = fighter.maxHp;
       addLog(`<span class="log-event">🩸 DEMONBLOOD! ${fighter.name} refuses to die from burn — rising at full HP!</span>`);
       renderFighter(side, fighter);
-      setTimeout(callback, 400);
+      setTimeout(callback, pace(400));
       return;
     }
 
@@ -2273,7 +2281,7 @@ function applyBurnTick(side, fighter, callback) {
     if (fighter.deathsDoorActive) {
       fighter.hp = 1;
       renderFighter(side, fighter);
-      setTimeout(callback, 400);
+      setTimeout(callback, pace(400));
       return;
     }
 
@@ -2285,7 +2293,7 @@ function applyBurnTick(side, fighter, callback) {
         fighter.deathsDoorActive = true;
         addLog(`<span class="log-event">☠ Death's Door! ${fighter.name} clings to life at 1 HP!</span>`);
         renderFighter(side, fighter);
-        setTimeout(callback, 400);
+        setTimeout(callback, pace(400));
         return;
       }
     }
@@ -2309,7 +2317,7 @@ function applyBurnTick(side, fighter, callback) {
     return;
   }
 
-  setTimeout(callback, 400);
+  setTimeout(callback, pace(400));
 }
 
 // ── POISON DOT (Dart-Peon) ───────────────────────────────
@@ -2332,7 +2340,7 @@ function applyPoisonTick(side, fighter, callback) {
     if (fighter.deathsDoorActive) {
       fighter.hp = 1;
       renderFighter(side, fighter);
-      setTimeout(callback, 400);
+      setTimeout(callback, pace(400));
       return;
     }
 
@@ -2344,7 +2352,7 @@ function applyPoisonTick(side, fighter, callback) {
         fighter.deathsDoorActive = true;
         addLog(`<span class="log-event">☠ Death's Door! ${fighter.name} clings to life at 1 HP!</span>`);
         renderFighter(side, fighter);
-        setTimeout(callback, 400);
+        setTimeout(callback, pace(400));
         return;
       }
     }
@@ -2362,7 +2370,7 @@ function applyPoisonTick(side, fighter, callback) {
     return;
   }
 
-  setTimeout(callback, 400);
+  setTimeout(callback, pace(400));
 }
 
 // ── BLEED DOT (Pirate Blademaster) ───────────────────────
@@ -2386,7 +2394,7 @@ function applyBleedTick(side, fighter, callback) {
     if (fighter.deathsDoorActive) {
       fighter.hp = 1;
       renderFighter(side, fighter);
-      setTimeout(callback, 400);
+      setTimeout(callback, pace(400));
       return;
     }
 
@@ -2398,7 +2406,7 @@ function applyBleedTick(side, fighter, callback) {
         fighter.deathsDoorActive = true;
         addLog(`<span class="log-event">☠ Death's Door! ${fighter.name} clings to life at 1 HP!</span>`);
         renderFighter(side, fighter);
-        setTimeout(callback, 400);
+        setTimeout(callback, pace(400));
         return;
       }
     }
@@ -2416,7 +2424,7 @@ function applyBleedTick(side, fighter, callback) {
     return;
   }
 
-  setTimeout(callback, 400);
+  setTimeout(callback, pace(400));
 }
 
 // Runs any active DOT ticks (burn, poison, bleed) on `fighter` in sequence,
@@ -2465,7 +2473,7 @@ function executeAttack(turn, attacker, defender) {
         if (checkDeaths()) return; // Inferno itself may have killed someone
         state.currentTurn = turn === 'player' ? 'ai' : 'player';
         renderTurnIndicator();
-        if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+        if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
       });
       return;
     }
@@ -2483,7 +2491,7 @@ function executeAttack(turn, attacker, defender) {
           if (checkDeaths()) return;
           state.currentTurn = turn === 'player' ? 'ai' : 'player';
           renderTurnIndicator();
-          if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+          if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
         });
         return;
       }
@@ -2528,7 +2536,7 @@ function executeAttack(turn, attacker, defender) {
     state.currentTurn = turn === 'player' ? 'ai' : 'player';
     renderTurnIndicator();
     if (!state.paused) {
-      state.battleTimeout = setTimeout(runBattleTick, 1400);
+      state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     }
   });
 }
@@ -3053,26 +3061,26 @@ function doAttack(attackerSide, attacker, defender, callback) {
         }
       }
       if (attacker.necroTurnCount > 0 && attacker.necroTurnCount % 3 === 0) {
-        setTimeout(() => triggerFireStorm(attacker, attackerSide), 200);
+        setTimeout(() => triggerFireStorm(attacker, attackerSide), pace(200));
       }
       renderFighter(attackerSide, attacker);
     }
 
     if (attacker.passiveKey === 'chainheal' && attacker.shamHealCount > 0 && attacker.shamHealCount % 2 === 0) {
-      setTimeout(() => triggerChainHeal(attacker, attackerSide), 200);
+      setTimeout(() => triggerChainHeal(attacker, attackerSide), pace(200));
     }
     if (attacker.passiveKey === 'lavablast' && attacker.shamLavaCount > 0 && attacker.shamLavaCount % 3 === 0) {
-      setTimeout(() => triggerLavaBlast(attacker, attackerSide, defender, defenderSide), 200);
+      setTimeout(() => triggerLavaBlast(attacker, attackerSide, defender, defenderSide), pace(200));
     }
     if (attacker.passiveKey === 'barrage' && attacker.barrageCount > 0 && attacker.barrageCount % 2 === 0) {
-      setTimeout(() => triggerBarrage(attacker, attackerSide), 200);
+      setTimeout(() => triggerBarrage(attacker, attackerSide), pace(200));
     }
     if (attacker.passiveKey === 'revival' && !attacker.isMounted && !attacker.horseReviveUsed && attacker.dismountedAttacks >= 2) {
-      setTimeout(() => remountRider(attacker, attackerSide), 200);
+      setTimeout(() => remountRider(attacker, attackerSide), pace(200));
     }
 
-    setTimeout(callback, isNecroTurn ? 900 : thunderlordFired ? 700 : 300);
-  }, 180);
+    setTimeout(callback, pace(isNecroTurn ? 900 : thunderlordFired ? 700 : 300));
+  }, pace(180));
 }
 
 // ── PASSIVES ──────────────────────────────────────────────
@@ -3703,7 +3711,7 @@ function triggerEvasion(attackerSide, assassin) {
     // Can't retreat — continue normally
     state.currentTurn = attackerSide === 'player' ? 'ai' : 'player';
     renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     return;
   }
 
@@ -3784,7 +3792,7 @@ function triggerDeathGrip(attackerSide, dk) {
     logEvent(`💀 Death Grip fizzles — no benched targets!`);
     state.currentTurn = attackerSide === 'player' ? 'ai' : 'player';
     renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     return;
   }
 
@@ -3880,7 +3888,7 @@ function triggerWolfBite(attackerSide, wolf, defender) {
     setTimeout(() => {
       state.currentTurn = attackerSide === 'player' ? 'ai' : 'player';
       renderTurnIndicator();
-      if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+      if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     }, 300);
   }, 180);
 }
@@ -4026,7 +4034,7 @@ function checkDeaths() {
     renderFighter('ai', state.aiActive);
     state.currentTurn = 'ai';   // demon goes next, not the player
     renderTurnIndicator();
-    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1400);
+    if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1400));
     return true;  // stop any follow-up attacks this turn
   }
 
@@ -4073,7 +4081,7 @@ function checkDeaths() {
         // Without this, the battle tick would die here and the game would freeze.
         state.currentTurn = state.currentTurn === 'player' ? 'ai' : 'player';
         renderTurnIndicator();
-        if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, 1800);
+        if (!state.paused) state.battleTimeout = setTimeout(runBattleTick, pace(1800));
       }
       return true;
     }
@@ -4280,7 +4288,7 @@ function checkBothReady() {
     applyOnEnterEffects(state.aiActive, 'ai');
     initCombatTurn(state.playerActive, state.aiActive);
     if (!state.paused) {
-      state.battleTimeout = setTimeout(runBattleTick, 1200 + extraDelay);
+      state.battleTimeout = setTimeout(runBattleTick, pace(1200 + extraDelay));
     }
   }
 }
@@ -5645,6 +5653,26 @@ function applyVolumeToAllSounds(vol) {
     const audio = document.getElementById(id);
     if (audio) audio.volume = vol;
   });
+}
+
+// ── Battle speed ───────────────────────────────────────────
+// Veteran-friendly pacing multiplier: 1x (default) / 1.5x / 2x / 3x.
+// Only scales the delays that gate turn-to-turn and attack-to-attack
+// progression (see pace() call sites) — never gameplay math.
+function getBattleSpeed() {
+  const stored = localStorage.getItem('battleSpeed');
+  const val = stored !== null ? parseFloat(stored) : 1;
+  return (val && val > 0) ? val : 1;
+}
+function setBattleSpeed(mult) {
+  mult = [1, 1.5, 2, 3].includes(mult) ? mult : 1;
+  localStorage.setItem('battleSpeed', mult);
+}
+// Scales a pacing delay (ms) by the current battle speed. Never returns
+// less than 1ms so a setTimeout never collapses to synchronous/0.
+function pace(ms) {
+  const speed = getBattleSpeed();
+  return speed === 1 ? ms : Math.max(1, Math.round(ms / speed));
 }
 
 function getMusicVolume() {
