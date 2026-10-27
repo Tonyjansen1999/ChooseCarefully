@@ -1467,9 +1467,39 @@ function showScreen(name) {
   if (homeBtn) homeBtn.style.display = (name === 'menu') ? 'none' : 'block';
 }
 
+// Screens where going home would discard real progress (a picked team, an
+// active battle, or a Rogue Mode run) — these are the ones that warrant a
+// confirmation. `end`/`wavevictory` are excluded: the game there already
+// concluded, so there's nothing left to lose by leaving. `menu` is excluded
+// too, though moot since the Home button is hidden on it anyway.
+const SCREENS_WITH_PROGRESS = ['selection', 'passive', 'reveal', 'battle', 'choose', 'wavelobby', 'waveupgrade'];
+function isGameInProgress() {
+  const activeName = Object.keys(screens).find(k => screens[k].classList.contains('active'));
+  return SCREENS_WITH_PROGRESS.includes(activeName);
+}
+
+// Home button: confirm first if it would discard an in-progress game.
+function handleHomeClick() {
+  if (!isGameInProgress()) { restartGame(); return; }
+  const text = state.waveMode
+    ? `Going home now will end your current Rogue Mode run at Wave ${state.currentWave}. This can't be undone.`
+    : `Going home now will end your current battle. This can't be undone.`;
+  document.getElementById('confirm-home-text').textContent = text;
+  document.getElementById('confirm-home-modal').classList.add('active');
+}
+function closeHomeConfirm() {
+  document.getElementById('confirm-home-modal').classList.remove('active');
+}
+document.getElementById('confirm-home-cancel').addEventListener('click', closeHomeConfirm);
+document.getElementById('confirm-home-backdrop').addEventListener('click', closeHomeConfirm);
+document.getElementById('confirm-home-go').addEventListener('click', () => {
+  closeHomeConfirm();
+  restartGame();
+});
+
 // ── Event Bindings ────────────────────────────────────────
 document.getElementById('btn-start').addEventListener('click', startGame);
-document.getElementById('btn-home-menu').addEventListener('click', restartGame);
+document.getElementById('btn-home-menu').addEventListener('click', handleHomeClick);
 document.getElementById('btn-wave-mode').addEventListener('click', startWaveMode);
 document.getElementById('btn-battle').addEventListener('click', revealAndBattle);
 document.getElementById('btn-restart').addEventListener('click', restartGame);

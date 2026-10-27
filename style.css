@@ -864,6 +864,36 @@ html, body {
   margin-top: 0;
 }
 
+/* ── Confirm Home overlay ── */
+.confirm-box {
+  max-width: 400px;
+  text-align: center;
+}
+.confirm-box .modal-title {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+.confirm-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.confirm-actions .btn {
+  padding: 11px 22px;
+  font-size: 0.95rem;
+}
+.confirm-actions .btn-danger {
+  padding: 11px 22px;
+  font-size: 0.95rem;
+  box-shadow: var(--glow-accent2);
+}
+
 .modal-content {
   font-size: 0.9rem;
   line-height: 1.8;
