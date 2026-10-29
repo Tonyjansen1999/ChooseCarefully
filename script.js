@@ -22,7 +22,7 @@ const CLASSES = [
       {
         key: 'shieldblock',
         name: 'Shield Block',
-        description: 'Blocks all direct damage from the opponent\'s very first attack. One-time effect per life.',
+        description: 'Blocks all damage from the opponent\'s first attack.',
       },
     ],
   },
@@ -34,7 +34,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 2,
-    ultimateDescription: 'Every 2 attacks: +10 damage on next attack and heal 10 HP (same for both passives).',
+    ultimateDescription: 'Every 2 attacks: +10 damage on the next attack and heals 10 HP.',
     passives: [
       {
         key: 'bloodthirst',
@@ -44,7 +44,7 @@ const CLASSES = [
       {
         key: 'rage',
         name: 'Rage',
-        description: 'For every 20 HP missing, deals +10% bonus damage (calculated from base damage).',
+        description: 'Deals +10% bonus damage for every 20 HP missing.',
       },
     ],
   },
@@ -56,7 +56,7 @@ const CLASSES = [
     baseDamage: 25,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 3,
-    ultimateDescription: 'Shielding: doubles shield generation (every 3 attacks). Nerfer: heals itself for 20 HP (every 2 attacks).',
+    ultimateDescription: 'Shielding: every 3 attacks, doubles shield generation. Nerfer: every 2 attacks, heals 20 HP.',
     passives: [
       {
         key: 'shield',
@@ -66,7 +66,7 @@ const CLASSES = [
       {
         key: 'nerfer',
         name: 'Nerfer',
-        description: 'Each turn survived, permanently reduces a random benched opponent\'s damage by 10 (min 10).',
+        description: 'Each turn survived, permanently reduces a random benched enemy\'s damage by 10.',
       },
     ],
   },
@@ -78,17 +78,17 @@ const CLASSES = [
     baseDamage: 50,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 2,
-    ultimateDescription: 'Burn: increases burn by +10 dmg/turn. Thunderlord: deals 10 immediate damage to the active opponent.',
+    ultimateDescription: 'Burn: increases burn damage by +10/turn. Thunderlord: deals 10 magical damage to the active opponent.',
     passives: [
       {
         key: 'burn',
         name: 'Burn',
-        description: 'Attacks apply permanent burn — 10 damage at the start of the target\'s turn.',
+        description: 'Attacks apply Burn: 10 magical damage at the start of the target\'s turn.',
       },
       {
         key: 'thunderlord',
         name: 'Thunderlord',
-        description: 'On knockout: heals 30 HP, gains +20 damage permanently, and strikes the next entering opponent for 30.',
+        description: 'On knockout: heals 30 HP, gains +20 damage, and deals 30 magical damage to the next opponent that enters.',
       },
     ],
   },
@@ -100,17 +100,17 @@ const CLASSES = [
     baseDamage: 45,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 2,
-    ultimateDescription: 'Every 2 attacks: next attack deals +20 ✨ Magical bonus damage (bypasses armor).',
+    ultimateDescription: 'Every 2 attacks: next attack deals +20 magical bonus damage.',
     passives: [
       {
         key: 'firststrike',
         name: 'First Strike',
-        description: 'Always attacks first. First attack deals +30 ✨ Magical bonus damage (bypasses armor).',
+        description: 'Always attacks first. First attack deals +30 magical bonus damage.',
       },
       {
         key: 'evasion',
         name: 'Evasion',
-        description: 'After 2 attacks, retreats to bench (once per match): heals 50% of lost HP, gains +20 permanent damage.',
+        description: 'After 2 attacks, retreats to bench once: heals 50% of lost HP and gains +20 damage.',
       },
     ],
   },
@@ -132,7 +132,7 @@ const CLASSES = [
       {
         key: 'hamstring',
         name: 'Hamstring',
-        description: 'Every landed hit has a 33.33% chance to cripple the target: it skips its next turn and takes 20 ⚔ Physical fall damage.',
+        description: 'Every hit has a 33% chance to skip the target\'s next turn and deal 20 physical damage.',
       },
     ],
   },
@@ -149,12 +149,12 @@ const CLASSES = [
       {
         key: 'deathgrip',
         name: 'Death Grip',
-        description: 'Every 3 attacks: pulls a random benched enemy into battle and immediately attacks them for +20 ✨ Magical bonus damage (bypasses armor).',
+        description: 'Every 3 attacks: pulls a random benched enemy into battle and deals +20 magical bonus damage.',
       },
       {
         key: 'fearofthedead',
         name: 'Fear of the Dead',
-        description: 'Every 3 attacks: forces the opponent to skip their next turn completely.',
+        description: 'Every 3 attacks: forces the opponent to skip their next turn.',
       },
     ],
   },
@@ -171,12 +171,12 @@ const CLASSES = [
       {
         key: 'luckofthedraw',
         name: 'Luck of the Draw',
-        description: 'Every other attack, flip a coin: Heads = +40 bonus damage that turn (even if the attack misses). Tails = no bonus.',
+        description: 'Every other attack, flip a coin: Heads grants +40 bonus damage, Tails does nothing.',
       },
       {
         key: 'theace',
         name: 'The Ace',
-        description: 'Once when first entering battle, flip a coin: Heads = permanently +50 HP and +10 damage. Tails = no effect.',
+        description: 'When first entering battle, flip a coin: Heads grants +50 HP and +10 damage, Tails does nothing.',
       },
     ],
   },
@@ -193,12 +193,12 @@ const CLASSES = [
       {
         key: 'bearform',
         name: 'Bear Form',
-        description: 'After first attack (✨ Magical), transforms into a mighty bear: becomes 160 HP / 50 ⚔ Physical DMG and heals to full immediately.',
+        description: 'First attack is magical. Then transforms into a Bear: 160 HP, 50 physical damage, and heals to full.',
       },
       {
         key: 'wolfform',
         name: 'Wolf Form',
-        description: 'After first attack (✨ Magical), transforms into a swift wolf: becomes 130 HP / 60 DMG and attacks twice per turn — the second hit (Wolf Bite) always deals exactly 25 ⚔ Physical damage.',
+        description: 'First attack is magical. Then transforms into a Wolf: 130 HP, 60 damage, attacking twice per turn (second hit deals a fixed 25 physical damage).',
       },
     ],
   },
@@ -210,12 +210,12 @@ const CLASSES = [
     baseDamage: 35,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage with no overflow to the rider. On dismount, gains +10 ⚔ Physical anger per turn.',
+    ultimateDescription: 'Always mounted on a horse (60 HP) that absorbs all incoming damage. On dismount, gains +10 physical anger per turn.',
     passives: [
       {
         key: 'revival',
         name: 'Revival',
-        description: 'After 2 turns dismounted, the horse revives with 40 HP and the Rider remounts, keeping the anger bonus built up so far. Horse revival is one-time only.',
+        description: 'After 2 turns dismounted, the horse revives with 40 HP and the Rider remounts, keeping its anger bonus.',
       },
       {
         key: 'parry',
@@ -232,17 +232,17 @@ const CLASSES = [
     baseDamage: 25,
     armorType: 'cloth', armorValue: 0,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Each turn: takes 20 self-damage. Every 3 turns: Fire Storm hits ALL living opponents for 30 ✨ Magical.',
+    ultimateDescription: 'Each turn: takes 20 self-damage. Every 3 turns: Fire Storm deals 30 magical damage to all living opponents.',
     passives: [
       {
         key: 'sacrifice',
         name: 'Sacrifice',
-        description: 'A Ghoul grows each turn (+30 HP, +10 DMG; starts at 10 HP / 10 DMG). When the Necromancer dies the Ghoul rises in its place as a ⚔ Physical attacker.',
+        description: 'A Ghoul grows each turn (+30 HP, +10 DMG). When the Necromancer dies, the Ghoul rises as a physical attacker.',
       },
       {
         key: 'reborn',
         name: 'Reborn',
-        description: 'Starting turn 3, revives one fallen ally at 50% HP and 50% damage (one-time only). The revived ally appears darkened.',
+        description: 'Starting turn 3, revives one fallen ally at 50% HP and damage.',
       },
     ],
   },
@@ -254,7 +254,7 @@ const CLASSES = [
     baseDamage: 30,
     armorType: 'leather', armorValue: 10,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Lightning Shield (immediately active): permanently reduces incoming damage by 10 and retaliates 10 ✨ Magical against physical attackers.',
+    ultimateDescription: 'Lightning Shield: reduces incoming damage by 10 and retaliates with 10 magical damage against physical attackers.',
     passives: [
       {
         key: 'chainheal',
@@ -264,7 +264,7 @@ const CLASSES = [
       {
         key: 'lavablast',
         name: 'Lava Blast',
-        description: 'Every 3 attacks: fires a massive 50 ✨ Magical blast. Overkill damage transfers to the next living opponent.',
+        description: 'Every 3 attacks: deals 50 magical damage. Overkill carries to the next opponent.',
       },
     ],
   },
@@ -276,7 +276,7 @@ const CLASSES = [
     baseDamage: 40,
     armorType: 'mail', armorValue: 20,
     ultimateThreshold: 9999,
-    ultimateDescription: 'Crusader Aura (always active): half of every hit the Paladin lands is ✨ Magical (bypasses armor) — the other half stays ⚔ Physical.',
+    ultimateDescription: 'Crusader Aura: half of every hit is magical damage, the other half physical.',
     passives: [
       {
         key: 'auraofprotection',
@@ -286,7 +286,7 @@ const CLASSES = [
       {
         key: 'judgement',
         name: 'Judgement',
-        description: 'Every other attack is replaced by Judgement: base attack damage +20, dealt entirely as true damage (bypasses all armor and defense), and heals the Paladin for 20 HP.',
+        description: 'Every other attack is replaced by Judgement: +20 damage dealt as true damage, healing the Paladin for 20 HP.',
       },
     ],
   },
@@ -303,12 +303,12 @@ const CLASSES = [
       {
         key: 'barrage',
         name: 'Barrage',
-        description: 'Every other attack, fires an extra Barrage: 30 ⚔ Physical damage to the active opponent and every living benched opponent.',
+        description: 'Every other attack, fires an extra Barrage: 30 physical damage to the active opponent and all benched opponents.',
       },
       {
         key: 'blademaster',
         name: 'Blademaster',
-        description: 'Every landed hit inflicts Bleed: 10 true damage per turn and −33.33% healing effectiveness. Persists while benched; only clears on death or at the next 10-wave section.',
+        description: 'Every landed hit inflicts Bleed: 10 true damage per turn and −33% healing effectiveness.',
       },
     ],
   },
@@ -433,7 +433,7 @@ function buildKnight() {
     armorType: 'mail', armorValue: 20,
     passiveKey: 'knightblock', passiveName: 'Iron Guard',
     passive: 'Blocks the first direct attack of the battle. Does not reset for later opponents.',
-    passives: [{ key: 'knightblock', name: 'Iron Guard', description: 'Blocks the first direct attack of the battle. Does not reset for later opponents.' }],
+    passives: [{ key: 'knightblock', name: 'Iron Guard', description: 'Blocks the first direct attack of the battle.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
     shieldBlockAvailable: true,
@@ -454,7 +454,7 @@ function buildWizard() {
     armorType: 'cloth', armorValue: 0,
     passiveKey: 'wizardfirestorm', passiveName: 'Fire Storm',
     passive: 'Retaliates magical fire damage when hit; retaliation starts at 15 and grows +20 each time. Heals the Wizard for 50% of the retaliation amount.',
-    passives: [{ key: 'wizardfirestorm', name: 'Fire Storm', description: 'Retaliates when hit; damage starts at 15 and grows by 20 each retaliation. Heals Wizard for 50% of the retaliation amount.' }],
+    passives: [{ key: 'wizardfirestorm', name: 'Fire Storm', description: 'Retaliates with magical damage when hit, starting at 15 and growing by 20 each time. Heals the Wizard for 50% of that amount.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
     wizardFireStormDmg: 15,   // starts at 15, +20 after each retaliation
@@ -475,7 +475,7 @@ function buildChampion() {
     armorType: 'mail', armorValue: 20,
     passiveKey: 'truedamage', passiveName: 'True Damage',
     passive: 'Half of base damage is true damage — ignores all armor and damage reduction.',
-    passives: [{ key: 'truedamage', name: 'True Damage', description: 'Half of base damage bypasses all armor and damage reduction.' }],
+    passives: [{ key: 'truedamage', name: 'True Damage', description: 'Half of each attack is dealt as true damage.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
   };
@@ -496,7 +496,7 @@ function buildDartPeon() {
     armorType: 'leather', armorValue: 10,
     passiveKey: 'dartpeon', passiveName: 'Poison Dart',
     passive: 'Poison Dart: Attacks apply Poison: 10 damage per turn + healing reduction.',
-    passives: [{ key: 'dartpeon', name: 'Poison Dart', description: 'Each hit poisons the target: 10 magical DOT per turn + 50% healing reduction. Persists while benched; only clears on death or at the next 10-wave section.' }],
+    passives: [{ key: 'dartpeon', name: 'Poison Dart', description: 'Each hit poisons the target: 10 magical damage per turn and −50% healing effectiveness.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
   };
@@ -530,7 +530,7 @@ function buildDragon() {
     armorType: 'scale', armorValue: 40,
     passiveKey: 'dragonfire', passiveName: 'Inferno',
     passive: 'Every 3rd attack launches a fireball hitting all living player cards for 50 damage.',
-    passives: [{ key: 'dragonfire', name: 'Inferno', description: 'Every 3rd attack, all living player cards take 50 damage.' }],
+    passives: [{ key: 'dragonfire', name: 'Inferno', description: 'Every 3rd attack, all living player cards take 50 magical damage.' }],
     ultimateThreshold: 9999,
     ultimateDescription: 'None.',
   };
@@ -5000,7 +5000,7 @@ function showModal(section) {
       <ul>
         <li><strong>Peon</strong> — 60 HP / 35 DMG / Leather Armor. <em>Double Strike:</em> attacks twice every other turn. Scales: +10 HP and +5 DMG per 10 waves.</li>
         <li><strong>Dart-Peon</strong> — 60 HP / 30 DMG / Leather Armor. Appears from wave 6 onward. <em>Poison Dart:</em> every attack inflicts Poison on the target — 10 magical damage per turn and −50% healing effectiveness. The poison persists even while the card is benched, and only clears on death or at the next 10-wave section boundary (waves 11/21/31/41...). Scales every other set: +15 HP and +5 DMG at sets 2 and 4.</li>
-        <li><strong>Knight</strong> — 100 HP / 55 DMG / Mail Armor. <em>Iron Guard:</em> blocks the first direct attack from each new player fighter. Scales: +15 HP and +10 DMG per 10 waves.</li>
+        <li><strong>Knight</strong> — 100 HP / 55 DMG / Mail Armor. <em>Iron Guard:</em> blocks the first direct attack it takes; does not re-arm after that. Scales: +15 HP and +10 DMG per 10 waves.</li>
         <li><strong>Dragon</strong> — 1200 HP / 130 DMG / Scale Armor (+40). Both its base attack and <em>Inferno</em> are fully magical (bypass armor). <em>Inferno:</em> every 3rd attack breathes fire on all living player cards for 50 magical damage and inflicts −50% healing and −10 magic resistance on the active target. Wave 50 only — does not scale.</li>
       </ul>
 
